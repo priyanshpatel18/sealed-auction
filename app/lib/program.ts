@@ -2,7 +2,7 @@ import { AnchorProvider, Program } from "@coral-xyz/anchor";
 import type { Idl } from "@coral-xyz/anchor";
 import type { Wallet } from "@coral-xyz/anchor/dist/cjs/provider";
 import { Connection } from "@solana/web3.js";
-import type { SealedAuctionProgram } from "../../target/types/sealed_auction_program";
+import type { SealedAuctionProgram } from "@/types/sealed_auction_program";
 import idlJson from "./sealed_auction_program.json";
 
 export function programFor(

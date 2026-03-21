@@ -1,6 +1,9 @@
 {
   "license": "ISC",
   "scripts": {
+    "i": "npm install",
+    "install:app": "npm install --prefix app",
+    "install:all": "npm install && npm install --prefix app",
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
     "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
     "test": "anchor test"

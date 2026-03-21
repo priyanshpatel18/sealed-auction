@@ -1,10 +1,22 @@
 import type { Metadata } from "next";
+import { Geist } from "next/font/google";
+import { BackgroundStreaks } from "@/components/BackgroundStreaks";
+import { SiteFooter } from "@/components/SiteFooter";
+import { SiteHeader } from "@/components/SiteHeader";
 import "./globals.css";
 
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
-  title: "Sealed Auction — MagicBlock ER",
+  title: {
+    default: "MagicBlock · Sealed-bid auctions",
+    template: "%s · MagicBlock",
+  },
   description:
-    "Public + Private ER sealed-bid auction demo with realtime runtime subscriptions",
+    "Sealed-bid auctions with TEE settlement and verifiable on-chain results — UI prototype.",
 };
 
 export default function RootLayout({
@@ -13,8 +25,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="px-4 py-8 max-w-4xl mx-auto">{children}</body>
+    <html lang="en" className={`${geistSans.variable} h-full antialiased`}>
+      <body className="flex min-h-screen flex-col bg-brand-bg text-brand-cream antialiased">
+        <BackgroundStreaks />
+        <div className="relative z-10 flex min-h-screen flex-col">
+          <SiteHeader />
+          <main className="flex-1">{children}</main>
+          <SiteFooter />
+        </div>
+      </body>
     </html>
   );
 }

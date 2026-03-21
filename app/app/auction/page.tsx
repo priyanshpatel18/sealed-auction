@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import * as anchor from "@coral-xyz/anchor";
 import type { Program } from "@coral-xyz/anchor";
 import { Connection, PublicKey } from "@solana/web3.js";
-import type { SealedAuctionProgram } from "../../../target/types/sealed_auction_program";
+import type { SealedAuctionProgram } from "@/types/sealed_auction_program";
 import { ConnectionMagicRouter } from "@magicblock-labs/ephemeral-rollups-sdk";
 import BN from "bn.js";
 import Link from "next/link";

@@ -1,14 +1,13 @@
-# Sealed auction — Next.js demo
+# Sealed auction — Next.js app
 
-Dual-RPC + WebSocket demo for **public** (normal ER) and **private** (TEE token URL) flows.
+Marketing UI (landing, discover, mock auction detail) plus **public** and **private** ER demos (dual-RPC + WebSocket).
 
 ## Setup
 
 ```bash
-cd app
-yarn
-# After `anchor build`, keep IDL in sync:
-yarn sync-idl
+npm install
+# After `anchor build` in the repo root (`sealed-auction/`), keep IDL in sync:
+npm run sync-idl
 ```
 
 ## Env (optional)
@@ -24,15 +23,17 @@ yarn sync-idl
 
 ## Routes
 
-- `/` — links
-- `/auction` — `AuctionConfig` (base polling) + `AuctionRuntime` (ER WebSocket), delegate via `delegate_runtime`
-- `/private-auction` — `verifyTeeRpcIntegrity` + `getAuthToken`, client-side `result_hash` check vs ciphertext digests
+- `/` — landing (sealed-bid product UI)
+- `/discover` — mock auction grid
+- `/auction/[id]` — mock auction detail
+- `/auction` — on-chain public ER demo (`AuctionConfig` + `AuctionRuntime`, delegate)
+- `/private-auction` — TEE + `getAuthToken` flow
 
 ## Dev
 
 ```bash
-yarn dev
-# open http://localhost:3333
+npm run dev
+# http://localhost:3333
 ```
 
 Point RPC env vars at the same cluster where the program `57owAwKC7TkWzsHPdaL7XXWfbj8FS1YUUw4sxWWmBarm` is deployed.
