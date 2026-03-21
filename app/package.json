@@ -1,0 +1,32 @@
+{
+  "name": "sealed-auction-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3333",
+    "build": "next build",
+    "start": "next start -p 3333",
+    "lint": "next lint",
+    "sync-idl": "cp ../target/idl/sealed_auction_program.json ./lib/sealed_auction_program.json"
+  },
+  "dependencies": {
+    "@noble/hashes": "^1.6.1",
+    "@coral-xyz/anchor": "^0.32.1",
+    "@magicblock-labs/ephemeral-rollups-sdk": "^0.6.5",
+    "@solana/web3.js": "^1.98.4",
+    "bn.js": "^5.2.1",
+    "tweetnacl": "^1.0.3",
+    "next": "15.1.9",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/bn.js": "^5.1.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.0"
+  }
+}

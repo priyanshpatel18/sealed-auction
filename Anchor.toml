@@ -1,0 +1,25 @@
+[toolchain]
+package_manager = "yarn"
+anchor_version = "0.32.1"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+# Key must match IDL filename stem: `target/idl/sealed_auction_program.json`
+sealed_auction_program = "57owAwKC7TkWzsHPdaL7XXWfbj8FS1YUUw4sxWWmBarm"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "localnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+# Register ts-node so `import` in .ts is transpiled before Node executes (do not set package.json "type": "commonjs" — it breaks this path on Node 20+).
+test = "yarn run ts-mocha --require ts-node/register -p ./tsconfig.json -t 1000000 \"tests/**/*.ts\""
+# If tests pass but you see `Error: No such file or directory (os error 2)` at the end: Anchor CLI
+# `stream_logs` reads `target/idl/<programs/*/Cargo.toml [lib] name>.json`. That name must match the
+# generated IDL stem (here: `sealed_auction_program.json`).

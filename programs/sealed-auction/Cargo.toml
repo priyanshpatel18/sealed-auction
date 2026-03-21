@@ -1,0 +1,29 @@
+[package]
+name = "sealed-auction"
+version = "0.1.0"
+description = "Sealed-bid auction with MagicBlock ER + Private ER support"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+# Must match `target/idl/<name>.json` stem — Anchor CLI `stream_logs` reads IDL using this name (see anchor-cli `stream_logs`).
+name = "sealed_auction_program"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+custom-heap = []
+custom-panic = []
+anchor-debug = []
+
+[dependencies]
+anchor-lang = { version = "0.32.1", features = ["init-if-needed"] }
+anchor-spl = { version = "0.32.1", features = ["associated_token", "token"] }
+ephemeral-rollups-sdk = { version = "=0.6.5", features = ["anchor", "disable-realloc"] }
+sha2 = "0.10"
+# Force compatible blake3 for toolchains that cannot parse edition2024 manifests.
+blake3 = "=1.5.5"
