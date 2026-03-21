@@ -3,82 +3,80 @@
 ## Prerequisites
 
 | Tool | Notes |
-|------|--------|
-| **Rust** + **Solana** | `solana-test-validator` for localnet; `cargo-build-sbf` for programs |
-| **Anchor** | Version in `Anchor.toml` (`anchor_version = "0.32.1"`). CLI should match (e.g. `avm use 0.32.1`) |
-| **Node.js** | LTS recommended (e.g. 20+) |
-| **Yarn** | v1 — `package_manager = "yarn"` in `Anchor.toml` |
-
-Install deps once:
+|------|-------|
+| Rust + Solana | `solana-test-validator`; `cargo-build-sbf` for BPF |
+| Anchor | Match `Anchor.toml` (`anchor_version = 0.32.1`), e.g. `avm use 0.32.1` |
+| Node.js | LTS (20+) |
+| Yarn | v1 (`package_manager = "yarn"` in `Anchor.toml`) |
 
 ```bash
 cd sealed-auction
 yarn install
 ```
 
-## Local program workflow
+## Production-style commands
+
+Run in order from repo `sealed-auction/`:
 
 ```bash
-# Build BPF + IDL + types
+# 1) Build program + IDL + TS types
 anchor build
 
-# IDL output (used by tests + Next app)
-#   target/idl/sealed_auction_program.json
-#   target/types/sealed_auction_program.ts
+# 2) Full integration suite (starts local validator; ~5–15 min)
+anchor test
+
+# 3) Optional: Rust checks
+cd programs/sealed-auction && cargo clippy --all-targets && cargo fmt --check && cd ../..
+
+# 4) Optional: JS format
+yarn lint
 ```
 
-- **`[lib] name`** in `programs/sealed-auction/Cargo.toml` must equal the IDL stem (`sealed_auction_program`). Anchor’s post-test `stream_logs` reads `target/idl/<lib name>.json`; a mismatch causes **`Error: No such file or directory (os error 2)`** after tests pass.
+**CI one-liner:** `anchor build && anchor test` (same as `yarn test` after build).
+
+**If port `8899` is in use:** stop other `solana-test-validator` / `anchor test` instances, or `lsof -i :8899` and kill the process, then rerun `anchor test`.
+
+## Build outputs
+
+- `target/deploy/sealed_auction_program.so`
+- `target/idl/sealed_auction_program.json`
+- `target/types/sealed_auction_program.ts`
+
+`[lib] name` in `programs/sealed-auction/Cargo.toml` must be `sealed_auction_program` so Anchor’s post-test log step finds the IDL (avoids `ENOENT` on `target/idl/<name>.json`).
 
 ## Tests
 
-```bash
-anchor test
-```
-
-- Uses **`ts-mocha`** with **`ts-node/register`** (see `Anchor.toml` `[scripts] test`). Do **not** set root `package.json` to `"type": "commonjs"` — it breaks ESM/ts-node on Node 20+ (`Cannot use import statement outside a module`).
-- Integration tests are slow (~30–60s) because of chain time (`reveal_end`, sleeps).
-
-**If `CARGO_TARGET_DIR` is overridden** (e.g. IDE/sandbox): `target/deploy/*.so` may not appear under the repo. Run `anchor build` / `anchor test` in a normal shell or `env -u CARGO_TARGET_DIR anchor test`.
+- Script: `Anchor.toml` → `[scripts] test` (ts-mocha + ts-node).
+- Do **not** set root `package.json` to `"type": "commonjs"` (breaks ts-node on some Node versions); see historical note in repo.
+- Tests use wall-clock `sleep` vs `commit_end` / `reveal_end` — slow by design.
+- If `CARGO_TARGET_DIR` is overridden: run `anchor build` / `anchor test` in a normal shell or `env -u CARGO_TARGET_DIR anchor test`.
 
 ## Frontend (`app/`)
 
 ```bash
 cd app
 yarn
-yarn sync-idl    # copies ../target/idl/sealed_auction_program.json → app/lib/
-yarn dev         # http://localhost:3333
+yarn sync-idl
+yarn dev
 ```
 
-See `app/README.md` for `NEXT_PUBLIC_*` env vars (base RPC, ER, router, TEE).
-
-## Program ID & cluster
-
-- Declared in `programs/sealed-auction/src/lib.rs` (`declare_id!`).
-- `Anchor.toml` `[programs.localnet]` key **`sealed_auction_program`** must match the IDL filename stem.
-
-After changing the program id, redeploy / update `declare_id!`, `Anchor.toml`, and clients.
+See `app/README.md` for env vars.
 
 ## Troubleshooting
 
 | Symptom | Likely cause |
 |---------|----------------|
-| `SettlementTooEarly` in tests | `sleep` before `settle` too short vs `reveal_end` + clock skew — increase wait. |
-| `AccountBorrowFailed` in `settle` | Borrow `Ref` held across CPI — ensure `try_borrow_data` scopes end before `invoke_signed` in refund loop. |
-| Tests pass, then `ENOENT` / os error 2 | Anchor `stream_logs` + IDL path — align `[lib] name` with IDL stem (see above). |
-| `Cannot use import statement outside a module` | Missing `ts-node/register` in test script or bad `"type"` in `package.json`. |
+| `SettlementTooEarly` | Increase `sleep` before settle vs `reveal_end`. |
+| `8899` already in use | Another validator running. |
+| Tests pass then `ENOENT` | IDL stem vs `[lib] name` mismatch. |
+| `Cannot use import...` | Test script must use `ts-node/register` (see `Anchor.toml`). |
 
-## Lint / format
-
-```bash
-yarn lint        # Prettier check
-yarn lint:fix    # Prettier write
-```
-
-## Useful paths
+## Paths
 
 | Path | Purpose |
 |------|---------|
-| `programs/sealed-auction/src/` | Program, instructions, `accounts.rs`, `state.rs` |
-| `tests/sealed-auction.ts` | Integration tests |
-| `tests/helpers.ts` | TS helpers (digests aligned with on-chain) |
-| `app/lib/` | IDL JSON copy, program helpers, TEE helpers |
+| `programs/sealed-auction/src/` | Program source |
+| `tests/01-*.ts` … `07-*.ts` | Integration tests |
+| `tests/helpers.ts`, `tests/test-utils.ts` | Hash helpers + assertions |
+| `tests/fixture.ts` | Shared Anchor fixture |
+| `SECURITY.md` | Trust model + prod checklist |

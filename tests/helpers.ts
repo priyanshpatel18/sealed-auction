@@ -2,7 +2,6 @@ import { createHash } from "crypto";
 import BN from "bn.js";
 import { PublicKey } from "@solana/web3.js";
 
-/** Matches on-chain `ciphertext_digest_v1` + `aggregate_ciphertext_digests_v1` */
 export function ciphertextDigestV1(
   auctionId: BN,
   bidder: PublicKey,

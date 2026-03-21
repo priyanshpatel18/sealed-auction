@@ -6,7 +6,9 @@
     "install:all": "npm install && npm install --prefix app",
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
     "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
-    "test": "anchor test"
+    "build": "anchor build",
+    "test": "anchor test",
+    "ci": "anchor build && anchor test"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.32.1",
