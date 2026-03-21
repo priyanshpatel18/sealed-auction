@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { CreateAuctionDialog } from "@/components/auction/CreateAuctionDialog";
 
 export function SiteHeader() {
-  const [toast, setToast] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
 
   return (
@@ -41,13 +41,9 @@ export function SiteHeader() {
             >
               Create
             </button>
-            <button
-              type="button"
-              onClick={() => setToast(true)}
-              className="rounded-full border border-brand-muted bg-brand-cream/5 px-5 py-2 text-base text-brand-cream transition hover:border-brand-lime/60 hover:bg-brand-lime/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-lime"
-            >
-              Connect wallet
-            </button>
+            <div className="site-header-wallet">
+              <WalletMultiButton />
+            </div>
           </nav>
         </div>
       </header>
@@ -55,21 +51,6 @@ export function SiteHeader() {
         open={createOpen}
         onClose={() => setCreateOpen(false)}
       />
-      {toast ? (
-        <div
-          role="status"
-          className="fixed bottom-6 left-1/2 z-50 max-w-sm -translate-x-1/2 rounded-xl border border-brand-muted bg-brand-bg px-4 py-3 text-center text-sm text-brand-cream shadow-lg"
-        >
-          Demo only — no wallet connection in this prototype.
-          <button
-            type="button"
-            className="mt-2 block w-full text-xs font-semibold text-brand-lime"
-            onClick={() => setToast(false)}
-          >
-            Dismiss
-          </button>
-        </div>
-      ) : null}
     </>
   );
 }

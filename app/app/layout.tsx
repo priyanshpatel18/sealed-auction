@@ -3,6 +3,7 @@ import { Geist } from "next/font/google";
 import { BackgroundStreaks } from "@/components/BackgroundStreaks";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { SolanaWalletProvider } from "@/components/SolanaWalletProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -28,11 +29,13 @@ export default function RootLayout({
     <html lang="en" className={`${geistSans.variable} h-full antialiased`}>
       <body className="flex min-h-screen flex-col bg-brand-bg text-brand-cream antialiased">
         <BackgroundStreaks />
-        <div className="relative z-10 flex min-h-screen flex-col">
-          <SiteHeader />
-          <main className="flex-1">{children}</main>
-          <SiteFooter />
-        </div>
+        <SolanaWalletProvider>
+          <div className="relative z-10 flex min-h-screen flex-col">
+            <SiteHeader />
+            <main className="flex-1">{children}</main>
+            <SiteFooter />
+          </div>
+        </SolanaWalletProvider>
       </body>
     </html>
   );

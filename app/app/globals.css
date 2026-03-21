@@ -49,3 +49,41 @@ body {
 .feature-card {
   box-shadow: 0 0 0 1px rgba(251, 255, 251, 0.04) inset;
 }
+
+/*
+  Solana wallet-adapter UI overrides (library hardcodes .wallet-adapter-button-trigger
+  and ignores passed className on WalletMultiButton — scope under .site-header-wallet).
+*/
+.site-header-wallet .wallet-adapter-button {
+  font-family: inherit !important;
+  font-weight: 500 !important;
+  height: auto !important;
+  line-height: 1.25 !important;
+  padding: 0.5rem 1.25rem !important;
+  border-radius: 9999px !important;
+  border: 1px solid var(--brand-muted) !important;
+  background-color: rgba(251, 255, 251, 0.05) !important;
+  color: var(--brand-cream) !important;
+}
+
+.site-header-wallet .wallet-adapter-button:not([disabled]):hover {
+  background-color: rgba(222, 241, 87, 0.1) !important;
+  border-color: rgba(222, 241, 87, 0.6) !important;
+}
+
+.site-header-wallet .wallet-adapter-button:not([disabled]):focus-visible {
+  outline: 2px solid var(--brand-lime) !important;
+  outline-offset: 2px !important;
+}
+
+.site-header-wallet .wallet-adapter-dropdown-list {
+  background: var(--brand-bg);
+  border: 1px solid rgba(80, 86, 98, 0.55);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  font-family: inherit !important;
+}
+
+.site-header-wallet .wallet-adapter-dropdown-list-item:not([disabled]):hover {
+  background-color: rgba(222, 241, 87, 0.12) !important;
+  color: var(--brand-cream) !important;
+}
