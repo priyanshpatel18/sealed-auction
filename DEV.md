@@ -49,6 +49,7 @@ yarn lint
 - Script: `Anchor.toml` → `[scripts] test` (ts-mocha + ts-node).
 - Do **not** set root `package.json` to `"type": "commonjs"` (breaks ts-node on some Node versions); see historical note in repo.
 - Tests use wall-clock `sleep` vs `commit_end` / `reveal_end` — slow by design.
+- **No bidder airdrops:** Integration tests transfer SOL from the **Anchor provider wallet** to generated bidder keypairs (see `tests/fixture.ts`). On **devnet/mainnet**, ensure that wallet has enough SOL; airdrops are avoided so devnet faucet rate limits do not break CI.
 - If `CARGO_TARGET_DIR` is overridden: run `anchor build` / `anchor test` in a normal shell or `env -u CARGO_TARGET_DIR anchor test`.
 
 ## Frontend (`app/`)
@@ -66,6 +67,7 @@ See `app/README.md` for env vars.
 
 | Symptom | Likely cause |
 |---------|----------------|
+| `Provider wallet needs at least … lamports` | Fund the wallet in `Anchor.toml` / `~/.config/solana/id.json` (tests transfer SOL to bidders; no airdrop). |
 | `SettlementTooEarly` | Increase `sleep` before settle vs `reveal_end`. |
 | `8899` already in use | Another validator running. |
 | Tests pass then `ENOENT` | IDL stem vs `[lib] name` mismatch. |

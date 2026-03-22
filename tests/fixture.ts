@@ -1,5 +1,10 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program, Wallet } from "@coral-xyz/anchor";
+import { Keypair, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
+
+/** Per generated bidder: rent + PDAs + signer fees (avoid airdrops; funded from provider wallet). */
+const LAMPORTS_PER_BIDDER = 100_000_000;
+const MIN_PAYER_LAMPORTS = 3 * LAMPORTS_PER_BIDDER + 50_000_000;
 import {
   Keypair,
   LAMPORTS_PER_SOL,
@@ -22,7 +27,7 @@ export type AuctionFixture = {
   seller: PublicKey;
   payer: Keypair;
   bidderA: Keypair;
-  bidderB: Keypair;
+  bidderB: Keypair
   bidderC: Keypair;
 };
 
@@ -43,13 +48,22 @@ export async function getFixture(): Promise<AuctionFixture> {
   const bidderB = Keypair.generate();
   const bidderC = Keypair.generate();
 
-  // Shared keypairs run the whole suite; fund enough for many commits/reveals + fees.
-  for (const kp of [bidderA, bidderB, bidderC]) {
-    const sig = await provider.connection.requestAirdrop(
-      kp.publicKey,
-      120 * LAMPORTS_PER_SOL
+  const payerBal = await provider.connection.getBalance(payer.publicKey);
+  if (payerBal < MIN_PAYER_LAMPORTS) {
+    throw new Error(
+      `Provider wallet needs at least ${MIN_PAYER_LAMPORTS} lamports to fund test bidders (have ${payerBal}). Fund ~/.config/solana/id.json or your Anchor wallet.`
     );
-    await provider.connection.confirmTransaction(sig, "confirmed");
+  }
+
+  for (const kp of [bidderA, bidderB, bidderC]) {
+    const tx = new Transaction().add(
+      SystemProgram.transfer({
+        fromPubkey: payer.publicKey,
+        toPubkey: kp.publicKey,
+        lamports: LAMPORTS_PER_BIDDER,
+      })
+    );
+    await provider.sendAndConfirm(tx, [payer]);
   }
 
   cached = {
