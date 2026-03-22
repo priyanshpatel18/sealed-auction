@@ -59,6 +59,14 @@ export async function friendlyTxError(
     return lines.join("\n");
   }
 
+  const logText = [msg, ...(extraLogs ?? [])].join("\n");
+  if (/already in use/i.test(logText)) {
+    return (
+      "This wallet already has a bid commitment account for this auction (only one sealed bid per wallet). " +
+      "You cannot commit again. After the reveal phase starts, use Reveal with the same amount and salt you committed, or bid from a different wallet."
+    );
+  }
+
   if (/program that does not exist|Could not find program/i.test(msg)) {
     const lines = [
       "This program is not deployed on the network your RPC uses (or the wallet is on a different cluster).",

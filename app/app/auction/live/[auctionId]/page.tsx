@@ -3,8 +3,9 @@
 import { useConnection } from "@solana/wallet-adapter-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import BN from "bn.js";
+import { LiveAuctionBidPanel } from "@/components/onchain/LiveAuctionBidPanel";
 import { OnchainAuctionPanel } from "@/components/onchain/OnchainAuctionPanel";
 import { BASE_ENDPOINT } from "@/lib/config";
 import {
@@ -43,6 +44,27 @@ export default function LiveAuctionPage() {
   const [snapshot, setSnapshot] = useState<OnchainAuctionSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const reloadSnapshot = useCallback(async () => {
+    if (!auctionIdStr.trim() || auctionIdBn.lte(new BN(0))) {
+      setSnapshot(null);
+      setError("Invalid auction id.");
+      return;
+    }
+    try {
+      const result = await loadOnchainAuctionSnapshot(connection, auctionIdBn);
+      if (result.ok) {
+        setSnapshot(result.snapshot);
+        setError(null);
+      } else {
+        setSnapshot(null);
+        setError(describeAuctionLoadFailure(result.failure, activeRpc));
+      }
+    } catch (e) {
+      setSnapshot(null);
+      setError(e instanceof Error ? e.message : "Failed to load on-chain data.");
+    }
+  }, [connection, auctionIdBn, auctionIdStr, activeRpc]);
 
   useEffect(() => {
     let cancelled = false;
@@ -98,16 +120,6 @@ export default function LiveAuctionPage() {
         <h1 className="mt-2 text-3xl font-semibold tracking-tight text-brand-cream sm:text-4xl">
           Auction {auctionIdStr || "—"}
         </h1>
-        <p className="mt-2 text-sm text-brand-muted">
-          Live read via wallet RPC{" "}
-          <span className="break-all font-mono text-xs text-brand-cream/85">
-            {activeRpc}
-          </span>
-        </p>
-        <p className="mt-1 text-xs text-brand-muted">
-          App default <code className="text-brand-cream/70">NEXT_PUBLIC_BASE_RPC</code>:{" "}
-          <span className="break-all font-mono">{BASE_ENDPOINT}</span>
-        </p>
       </header>
 
       <div className="mt-10">
@@ -118,11 +130,19 @@ export default function LiveAuctionPage() {
             {error}
           </p>
         ) : snapshot ? (
-          <OnchainAuctionPanel
-            snapshot={snapshot}
-            cluster={cluster}
-            rpcMismatchWarning={rpcMismatchWarning}
-          />
+          <div className="space-y-10">
+            <OnchainAuctionPanel
+              snapshot={snapshot}
+              cluster={cluster}
+              rpcMismatchWarning={rpcMismatchWarning}
+            />
+            <LiveAuctionBidPanel
+              snapshot={snapshot}
+              auctionIdBn={auctionIdBn}
+              storageAuctionId={snapshot.config.auctionId}
+              onAfterTx={reloadSnapshot}
+            />
+          </div>
         ) : null}
       </div>
     </div>
