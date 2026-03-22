@@ -4,14 +4,14 @@
   Palette
   --brand-lime   #DEF157  accent / CTAs
   --brand-bg     #202720  page & surfaces
-  --brand-muted  #505662  secondary text & borders
+  --brand-muted  #A3AFBC  secondary text & borders (lighter for WCAG-ish contrast on bg)
   --brand-cream  #FBFFFB  primary text
 */
 
 :root {
   --brand-lime: #def157;
   --brand-bg: #202720;
-  --brand-muted: #505662;
+  --brand-muted: #a3afbc;
   --brand-cream: #fbfffb;
   --background: var(--brand-bg);
   --foreground: var(--brand-cream);
@@ -24,7 +24,7 @@
   --color-foreground: var(--foreground);
   --color-brand-bg: #202720;
   --color-brand-lime: #def157;
-  --color-brand-muted: #505662;
+  --color-brand-muted: #a3afbc;
   --color-brand-cream: #fbfffb;
   --font-sans: var(--font-geist-sans);
 }
@@ -78,7 +78,7 @@ body {
 
 .site-header-wallet .wallet-adapter-dropdown-list {
   background: var(--brand-bg);
-  border: 1px solid rgba(80, 86, 98, 0.55);
+  border: 1px solid rgba(163, 175, 188, 0.45);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
   font-family: inherit !important;
 }

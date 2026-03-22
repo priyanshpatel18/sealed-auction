@@ -1,7 +1,5 @@
-import Link from "next/link";
 import { CreateAuctionCta } from "@/components/landing/CreateAuctionCta";
 import { FeaturesScrollSection } from "@/components/landing/FeaturesScrollSection";
-import { ButtonLink } from "@/components/ui/Button";
 
 const features = [
   {
@@ -43,9 +41,6 @@ export function LandingPage() {
             powered by privacy.
           </p>
           <div className="mt-12 flex flex-wrap items-center justify-center gap-4 sm:mt-14 sm:gap-5">
-            <ButtonLink href="/discover" variant="primary" size="xl">
-              Explore Auctions
-            </ButtonLink>
             <CreateAuctionCta size="xl" />
           </div>
         </div>
@@ -121,14 +116,6 @@ export function LandingPage() {
               </p>
             </details>
           </dl>
-          <p className="mt-12 text-center text-base text-brand-cream/70 sm:mt-14 sm:text-lg">
-            <Link
-              href="/discover"
-              className="font-semibold text-brand-lime hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-lime"
-            >
-              Browse mock auctions →
-            </Link>
-          </p>
         </div>
       </section>
     </div>

@@ -511,11 +511,6 @@ export default function CreateAuctionPage() {
               <h2 className="text-sm font-semibold uppercase tracking-wider text-brand-muted">
                 On-chain
               </h2>
-              <p className="mt-2 text-xs text-brand-muted leading-relaxed">
-                Same cluster as{" "}
-                <code className="text-brand-cream/80">NEXT_PUBLIC_BASE_RPC</code> —
-                program must be deployed there. Bids settle in native SOL (lamports).
-              </p>
               <div className="mt-6 grid gap-6 sm:grid-cols-2">
                 <Input
                   id="auction-id"
