@@ -1,13 +1,13 @@
 import { DiscoverClient } from "@/components/discover/DiscoverClient";
-import { getAllListings } from "@/lib/data";
 import type { Metadata } from "next";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Discover · Sealed-bid auctions",
-  description: "Browse mock sealed-bid auction listings — UI prototype only.",
+  description: "Browse on-chain sealed-bid auctions with IPFS metadata.",
 };
 
 export default function DiscoverPage() {
-  const listings = getAllListings();
-  return <DiscoverClient listings={listings} />;
+  return <DiscoverClient />;
 }

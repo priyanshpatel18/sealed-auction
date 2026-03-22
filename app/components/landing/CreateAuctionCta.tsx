@@ -1,8 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { CreateAuctionDialog } from "@/components/auction/CreateAuctionDialog";
-import { Button } from "@/components/ui/Button";
+import { ButtonLink } from "@/components/ui/Button";
 
 export function CreateAuctionCta({
   className,
@@ -11,20 +9,14 @@ export function CreateAuctionCta({
   className?: string;
   size?: "lg" | "xl";
 } = {}) {
-  const [open, setOpen] = useState(false);
-
   return (
-    <>
-      <Button
-        type="button"
-        variant="secondary"
-        size={size}
-        className={className}
-        onClick={() => setOpen(true)}
-      >
-        Create Auction
-      </Button>
-      <CreateAuctionDialog open={open} onClose={() => setOpen(false)} />
-    </>
+    <ButtonLink
+      href="/create-auction"
+      variant="secondary"
+      size={size}
+      className={className}
+    >
+      Create auction
+    </ButtonLink>
   );
 }

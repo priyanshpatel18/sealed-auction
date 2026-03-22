@@ -14,13 +14,13 @@ pub fn hash_commitment(auction_id: u64, bidder: &Pubkey, amount: u64, salt: &[u8
     out.into()
 }
 
+/// Settlement hash for native-SOL auctions (fixed domain suffix replaces SPL mint).
 pub fn result_hash_v1(
     auction_id: u64,
     winner: &Pubkey,
     winning_price: u64,
     commit_count: u32,
     reveal_count: u32,
-    token_mint: &Pubkey,
 ) -> [u8; 32] {
     let mut hasher = Sha256::new();
     hasher.update(b"result:v1");
@@ -29,7 +29,7 @@ pub fn result_hash_v1(
     hasher.update(&winning_price.to_le_bytes());
     hasher.update(&commit_count.to_le_bytes());
     hasher.update(&reveal_count.to_le_bytes());
-    hasher.update(token_mint.as_ref());
+    hasher.update(&[0u8; 32]);
     let out = hasher.finalize();
     out.into()
 }
@@ -84,4 +84,18 @@ pub fn update_runtime_mirror(runtime: &mut crate::state::AuctionRuntime, auction
     runtime.leader_bidder = auction.leader_bidder;
     runtime.commit_count = auction.commit_count;
     runtime.reveal_count = auction.reveal_count;
+}
+
+/// Move lamports between accounts without the System Program CPI. The vault PDA is program-owned
+/// (`init`); System Program `transfer` cannot debit it — only credit into it from user wallets.
+pub fn transfer_lamports(from: &AccountInfo, to: &AccountInfo, amount: u64) -> Result<()> {
+    **from.try_borrow_mut_lamports()? = from
+        .lamports()
+        .checked_sub(amount)
+        .ok_or(crate::errors::SealedAuctionError::InsufficientFundsForDeposit)?;
+    **to.try_borrow_mut_lamports()? = to
+        .lamports()
+        .checked_add(amount)
+        .ok_or(crate::errors::SealedAuctionError::BidOutOfRange)?;
+    Ok(())
 }

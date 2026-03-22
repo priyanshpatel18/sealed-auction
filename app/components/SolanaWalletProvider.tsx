@@ -5,14 +5,11 @@ import {
   ConnectionProvider,
   WalletProvider,
 } from "@solana/wallet-adapter-react";
-import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import {
   PhantomWalletAdapter,
   SolflareWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
 import { BASE_ENDPOINT } from "@/lib/config";
-
-import "@solana/wallet-adapter-react-ui/styles.css";
 
 export function SolanaWalletProvider({ children }: { children: ReactNode }) {
   const wallets = useMemo(
@@ -22,8 +19,15 @@ export function SolanaWalletProvider({ children }: { children: ReactNode }) {
 
   return (
     <ConnectionProvider endpoint={BASE_ENDPOINT}>
-      <WalletProvider wallets={wallets} autoConnect>
-        <WalletModalProvider>{children}</WalletModalProvider>
+      <WalletProvider
+        wallets={wallets}
+        autoConnect={false}
+        localStorageKey="sealed-auction.wallet-v2"
+        onError={(err) => {
+          console.warn("[wallet]", err);
+        }}
+      >
+        {children}
       </WalletProvider>
     </ConnectionProvider>
   );

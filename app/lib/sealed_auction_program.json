@@ -1,5 +1,5 @@
 {
-  "address": "57owAwKC7TkWzsHPdaL7XXWfbj8FS1YUUw4sxWWmBarm",
+  "address": "9msixs2rRpafs5RaCbLxTeNEiZbvg5Qux3L8qENEN4JZ",
   "metadata": {
     "name": "sealed_auction_program",
     "version": "0.1.0",
@@ -286,38 +286,38 @@
             "program": {
               "kind": "const",
               "value": [
-                61,
-                45,
-                77,
-                13,
-                166,
-                171,
-                168,
-                165,
-                95,
-                20,
-                188,
-                179,
-                85,
-                32,
-                243,
-                132,
-                148,
-                113,
-                167,
-                235,
-                127,
-                241,
-                255,
-                225,
-                60,
+                130,
+                92,
+                103,
+                125,
+                104,
+                67,
+                28,
+                218,
+                208,
+                107,
+                8,
+                174,
                 210,
-                18,
-                86,
-                153,
-                95,
-                139,
-                26
+                151,
+                231,
+                148,
+                109,
+                216,
+                82,
+                17,
+                222,
+                13,
+                37,
+                135,
+                202,
+                195,
+                168,
+                49,
+                73,
+                147,
+                62,
+                222
               ]
             }
           }
@@ -419,7 +419,7 @@
         },
         {
           "name": "owner_program",
-          "address": "57owAwKC7TkWzsHPdaL7XXWfbj8FS1YUUw4sxWWmBarm"
+          "address": "9msixs2rRpafs5RaCbLxTeNEiZbvg5Qux3L8qENEN4JZ"
         },
         {
           "name": "delegation_program",
@@ -454,9 +454,6 @@
           "name": "seller",
           "writable": true,
           "signer": true
-        },
-        {
-          "name": "token_mint"
         },
         {
           "name": "auction",
@@ -512,101 +509,25 @@
           "pda": {
             "seeds": [
               {
-                "kind": "account",
-                "path": "auction"
-              },
-              {
                 "kind": "const",
                 "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
                 ]
               },
               {
-                "kind": "account",
-                "path": "token_mint"
+                "kind": "arg",
+                "path": "auction_id"
               }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
+            ]
           }
         },
         {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "associated_token_program",
-          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         }
       ],
       "args": [
@@ -629,6 +550,10 @@
         {
           "name": "private_mode",
           "type": "bool"
+        },
+        {
+          "name": "metadata_uri",
+          "type": "string"
         }
       ]
     },
@@ -760,16 +685,30 @@
           }
         },
         {
-          "name": "bidder_token",
-          "writable": true
-        },
-        {
           "name": "vault",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "auction_id"
+              }
+            ]
+          }
         },
         {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -831,15 +770,33 @@
         },
         {
           "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "auction_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "seller",
           "writable": true
         },
         {
-          "name": "seller_token",
-          "writable": true
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -893,15 +850,33 @@
         },
         {
           "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "auction_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "seller",
           "writable": true
         },
         {
-          "name": "seller_token",
-          "writable": true
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -1339,6 +1314,11 @@
       "code": 6018,
       "name": "AggregateMismatch",
       "msg": "Ciphertext aggregate digest does not match on-chain bids"
+    },
+    {
+      "code": 6019,
+      "name": "MetadataUriTooLong",
+      "msg": "Metadata URI too long"
     }
   ],
   "types": [
@@ -1349,10 +1329,6 @@
         "fields": [
           {
             "name": "seller",
-            "type": "pubkey"
-          },
-          {
-            "name": "token_mint",
             "type": "pubkey"
           },
           {
@@ -1429,6 +1405,13 @@
               "TEE stage: computed before settle_private."
             ],
             "type": "bool"
+          },
+          {
+            "name": "metadata_uri",
+            "docs": [
+              "IPFS gateway URL for listing JSON (`title`, `description`, `image`)."
+            ],
+            "type": "string"
           }
         ]
       }
@@ -1444,10 +1427,6 @@
           },
           {
             "name": "seller",
-            "type": "pubkey"
-          },
-          {
-            "name": "token_mint",
             "type": "pubkey"
           },
           {

@@ -6,17 +6,7 @@ import {
   sleep,
   uniqueAuctionId,
 } from "./test-utils";
-import {
-  auctionPdas,
-  bidPda,
-  ensureBidderAta,
-  ensureSellerAta,
-  getFixture,
-  mintTokensTo,
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-  SystemProgram,
-  TOKEN_PROGRAM_ID,
-} from "./fixture";
+import { auctionPdas, bidPda, getFixture, SystemProgram } from "./fixture";
 
 describe("public mode — e2e & settlement", function () {
   this.timeout(180_000);
@@ -24,18 +14,7 @@ describe("public mode — e2e & settlement", function () {
   it("full flow: commit → start_reveal → reveal → settle + result_hash parity", async () => {
     const ctx = await getFixture();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
-    const sellerAta = await ensureSellerAta(ctx);
-    const bidderAAta = await ensureBidderAta(ctx, ctx.bidderA.publicKey);
-    const bidderBAta = await ensureBidderAta(ctx, ctx.bidderB.publicKey);
-
-    await mintTokensTo(ctx, sellerAta.address, 1_000_000_000_000n);
-    await mintTokensTo(ctx, bidderAAta.address, 500_000_000_000n);
-    await mintTokensTo(ctx, bidderBAta.address, 500_000_000_000n);
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
 
     const now = Math.floor(Date.now() / 1000);
     const biddingStart = now - 2;
@@ -48,24 +27,22 @@ describe("public mode — e2e & settlement", function () {
         new BN(biddingStart),
         new BN(commitEnd),
         new BN(revealEnd),
-        false
+        false,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
     const saltA = Buffer.from("salt-a");
     const saltB = Buffer.from("salt-b");
-    const bidAmountA = new BN(300_000_000_000);
-    const bidAmountB = new BN(100_000_000_000);
+    const bidAmountA = new BN(300_000_000);
+    const bidAmountB = new BN(100_000_000);
     const commA = Array.from(
       hashCommitment(auctionId, ctx.bidderA.publicKey, bidAmountA, saltA)
     ) as number[];
@@ -114,9 +91,8 @@ describe("public mode — e2e & settlement", function () {
         auction,
         bid: bidPdaA,
         runtime,
-        bidderToken: bidderAAta.address,
         vault,
-        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
       })
       .signers([ctx.bidderA])
       .rpc();
@@ -128,9 +104,8 @@ describe("public mode — e2e & settlement", function () {
         auction,
         bid: bidPdaB,
         runtime,
-        bidderToken: bidderBAta.address,
         vault,
-        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
       })
       .signers([ctx.bidderB])
       .rpc();
@@ -148,12 +123,12 @@ describe("public mode — e2e & settlement", function () {
         authority: ctx.seller,
         auction,
         vault,
-        sellerToken: sellerAta.address,
-        tokenProgram: TOKEN_PROGRAM_ID,
+        seller: ctx.seller,
+        systemProgram: SystemProgram.programId,
       })
       .remainingAccounts([
         { pubkey: bidPdaB, isSigner: false, isWritable: false },
-        { pubkey: bidderBAta.address, isSigner: false, isWritable: true },
+        { pubkey: ctx.bidderB.publicKey, isSigner: false, isWritable: true },
       ])
       .rpc();
 
@@ -167,8 +142,7 @@ describe("public mode — e2e & settlement", function () {
       ctx.bidderA.publicKey,
       bidAmountA,
       2,
-      2,
-      ctx.mint
+      2
     );
     expect(Buffer.from(settled.resultHash).equals(expectedRh)).to.eq(true);
   });
@@ -176,14 +150,7 @@ describe("public mode — e2e & settlement", function () {
   it("single bidder can win and settle", async () => {
     const ctx = await getFixture();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
-    const sellerAta = await ensureSellerAta(ctx);
-    const aAta = await ensureBidderAta(ctx, ctx.bidderA.publicKey);
-    await mintTokensTo(ctx, aAta.address, 200n * 10n ** 9n);
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
 
     const now = Math.floor(Date.now() / 1000);
     await ctx.program.methods
@@ -192,22 +159,20 @@ describe("public mode — e2e & settlement", function () {
         new BN(now - 2),
         new BN(now + 4),
         new BN(now + 25),
-        false
+        false,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
     const salt = Buffer.from("solo");
-    const amt = new BN(50_000_000_000);
+    const amt = new BN(50_000_000);
     const comm = Array.from(
       hashCommitment(auctionId, ctx.bidderA.publicKey, amt, salt)
     ) as number[];
@@ -238,9 +203,8 @@ describe("public mode — e2e & settlement", function () {
         auction,
         bid,
         runtime,
-        bidderToken: aAta.address,
         vault,
-        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
       })
       .signers([ctx.bidderA])
       .rpc();
@@ -253,8 +217,8 @@ describe("public mode — e2e & settlement", function () {
         authority: ctx.seller,
         auction,
         vault,
-        sellerToken: sellerAta.address,
-        tokenProgram: TOKEN_PROGRAM_ID,
+        seller: ctx.seller,
+        systemProgram: SystemProgram.programId,
       })
       .rpc();
 
@@ -266,11 +230,7 @@ describe("public mode — e2e & settlement", function () {
   it("runtime mirror tracks commit_count after commits", async () => {
     const ctx = await getFixture();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const now = Math.floor(Date.now() / 1000);
     await ctx.program.methods
       .initializeAuction(
@@ -278,17 +238,15 @@ describe("public mode — e2e & settlement", function () {
         new BN(now - 2),
         new BN(now + 120),
         new BN(now + 240),
-        false
+        false,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
@@ -315,15 +273,7 @@ describe("public mode — e2e & settlement", function () {
   it("higher second bid becomes leader", async () => {
     const ctx = await getFixture();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
-    const aAta = await ensureBidderAta(ctx, ctx.bidderA.publicKey);
-    const bAta = await ensureBidderAta(ctx, ctx.bidderB.publicKey);
-    await mintTokensTo(ctx, aAta.address, 500n * 10n ** 9n);
-    await mintTokensTo(ctx, bAta.address, 500n * 10n ** 9n);
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
 
     const now = Math.floor(Date.now() / 1000);
     await ctx.program.methods
@@ -332,22 +282,20 @@ describe("public mode — e2e & settlement", function () {
         new BN(now - 2),
         new BN(now + 5),
         new BN(now + 120),
-        false
+        false,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
-    const low = new BN(10_000_000_000);
-    const high = new BN(500_000_000_000);
+    const low = new BN(10_000_000);
+    const high = new BN(500_000_000);
     const bidA = bidPda(ctx.program.programId, auctionId, ctx.bidderA.publicKey);
     const bidB = bidPda(ctx.program.programId, auctionId, ctx.bidderB.publicKey);
 
@@ -398,9 +346,8 @@ describe("public mode — e2e & settlement", function () {
         auction,
         bid: bidA,
         runtime,
-        bidderToken: aAta.address,
         vault,
-        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
       })
       .signers([ctx.bidderA])
       .rpc();
@@ -412,9 +359,8 @@ describe("public mode — e2e & settlement", function () {
         auction,
         bid: bidB,
         runtime,
-        bidderToken: bAta.address,
         vault,
-        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
       })
       .signers([ctx.bidderB])
       .rpc();

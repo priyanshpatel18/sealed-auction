@@ -40,4 +40,6 @@ pub enum SealedAuctionError {
     WinnerNotComputed,
     #[msg("Ciphertext aggregate digest does not match on-chain bids")]
     AggregateMismatch,
+    #[msg("Metadata URI too long")]
+    MetadataUriTooLong,
 }

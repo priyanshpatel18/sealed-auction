@@ -9,23 +9,15 @@ import {
 import {
   auctionPdas,
   bidPda,
-  ensureBidderAta,
   getFixture,
-  mintTokensTo,
-  ASSOCIATED_TOKEN_PROGRAM_ID,
   SystemProgram,
-  TOKEN_PROGRAM_ID,
 } from "./fixture";
 
 describe("public mode — time windows", () => {
   it("commit fails after commit_end passes (window uses strict < commit_end)", async () => {
     const ctx = await getFixture();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
 
     const now = Math.floor(Date.now() / 1000);
     await ctx.program.methods
@@ -34,17 +26,15 @@ describe("public mode — time windows", () => {
         new BN(now - 120),
         new BN(now + 1),
         new BN(now + 600),
-        false
+        false,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
@@ -77,14 +67,7 @@ describe("public mode — time windows", () => {
     this.timeout(120_000);
     const ctx = await getFixture();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
-    const aAta = await ensureBidderAta(ctx, ctx.bidderA.publicKey);
-    await mintTokensTo(ctx, aAta.address, 500n * 10n ** 9n);
-
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const now = Math.floor(Date.now() / 1000);
     await ctx.program.methods
       .initializeAuction(
@@ -92,22 +75,20 @@ describe("public mode — time windows", () => {
         new BN(now - 2),
         new BN(now + 5),
         new BN(now + 8),
-        false
+        false,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
     const salt = Buffer.from("s");
-    const amt = new BN(100_000_000_000);
+    const amt = new BN(100_000_000);
     const comm = Array.from(
       hashCommitment(auctionId, ctx.bidderA.publicKey, amt, salt)
     ) as number[];
@@ -141,9 +122,8 @@ describe("public mode — time windows", () => {
           auction,
           bid,
           runtime,
-          bidderToken: aAta.address,
           vault,
-          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
         })
         .signers([ctx.bidderA])
         .rpc();
@@ -156,14 +136,7 @@ describe("public mode — time windows", () => {
   it("reveal_bid rejects before start_reveal (phase still Bidding)", async () => {
     const ctx = await getFixture();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
-    const aAta = await ensureBidderAta(ctx, ctx.bidderA.publicKey);
-    await mintTokensTo(ctx, aAta.address, 500n * 10n ** 9n);
-
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const now = Math.floor(Date.now() / 1000);
     await ctx.program.methods
       .initializeAuction(
@@ -171,22 +144,20 @@ describe("public mode — time windows", () => {
         new BN(now - 2),
         new BN(now + 60),
         new BN(now + 120),
-        false
+        false,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
     const salt = Buffer.from("s");
-    const amt = new BN(50_000_000_000);
+    const amt = new BN(50_000_000);
     const comm = Array.from(
       hashCommitment(auctionId, ctx.bidderA.publicKey, amt, salt)
     ) as number[];
@@ -212,9 +183,8 @@ describe("public mode — time windows", () => {
           auction,
           bid,
           runtime,
-          bidderToken: aAta.address,
           vault,
-          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
         })
         .signers([ctx.bidderA])
         .rpc();

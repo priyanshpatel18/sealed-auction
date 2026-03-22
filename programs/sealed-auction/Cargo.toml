@@ -15,14 +15,13 @@ cpi = ["no-entrypoint"]
 no-entrypoint = []
 no-idl = []
 no-log-ix-name = []
-idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+idl-build = ["anchor-lang/idl-build"]
 custom-heap = []
 custom-panic = []
 anchor-debug = []
 
 [dependencies]
 anchor-lang = { version = "0.32.1", features = ["init-if-needed"] }
-anchor-spl = { version = "0.32.1", features = ["associated_token", "token"] }
 ephemeral-rollups-sdk = { version = "=0.6.5", features = ["anchor", "disable-realloc"] }
 sha2 = "0.10"
 # Force compatible blake3 for toolchains that cannot parse edition2024 manifests.

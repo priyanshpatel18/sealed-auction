@@ -2,6 +2,7 @@ import {
   Connection,
   Keypair,
   LAMPORTS_PER_SOL,
+  PublicKey,
   Transaction,
   VersionedTransaction,
 } from "@solana/web3.js";
@@ -47,12 +48,17 @@ export const ensureFunds = async (
   connection: Connection,
   keypair: Keypair
 ): Promise<void> => {
-  const balance = await connection.getBalance(keypair.publicKey);
+  await ensureWalletFunds(connection, keypair.publicKey);
+};
+
+/** Devnet/local: airdrop SOL to a connected wallet when balance is low. */
+export const ensureWalletFunds = async (
+  connection: Connection,
+  owner: PublicKey
+): Promise<void> => {
+  const balance = await connection.getBalance(owner);
   if (balance < MIN_BALANCE_LAMPORTS * LAMPORTS_PER_SOL) {
-    const sig = await connection.requestAirdrop(
-      keypair.publicKey,
-      LAMPORTS_PER_SOL
-    );
+    const sig = await connection.requestAirdrop(owner, LAMPORTS_PER_SOL);
     await connection.confirmTransaction(sig, "confirmed");
   }
 };

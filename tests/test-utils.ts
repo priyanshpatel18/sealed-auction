@@ -85,8 +85,7 @@ export function resultHashV1(
   winner: PublicKey,
   winningPrice: BN,
   commitCount: number,
-  revealCount: number,
-  tokenMint: PublicKey
+  revealCount: number
 ): Buffer {
   const h = createHash("sha256");
   h.update(Buffer.from("result:v1"));
@@ -99,7 +98,7 @@ export function resultHashV1(
   const rc = Buffer.alloc(4);
   rc.writeUInt32LE(revealCount, 0);
   h.update(rc);
-  h.update(tokenMint.toBuffer());
+  h.update(Buffer.alloc(32, 0));
   return h.digest();
 }
 

@@ -36,4 +36,4 @@ npm run dev
 # http://localhost:3333
 ```
 
-Point RPC env vars at the same cluster where the program `57owAwKC7TkWzsHPdaL7XXWfbj8FS1YUUw4sxWWmBarm` is deployed.
+Point RPC env vars at the same cluster where the program `9msixs2rRpafs5RaCbLxTeNEiZbvg5Qux3L8qENEN4JZ` is deployed.

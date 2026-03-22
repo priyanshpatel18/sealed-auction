@@ -7,12 +7,13 @@
     "build": "next build",
     "start": "next start -p 3333",
     "lint": "eslint",
-    "sync-idl": "cp ../target/idl/sealed_auction_program.json ./lib/sealed_auction_program.json"
+    "sync-idl": "cp ../target/idl/sealed_auction_program.json ./lib/sealed_auction_program.json && cp ../target/types/sealed_auction_program.ts ./types/sealed_auction_program.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.32.1",
     "@magicblock-labs/ephemeral-rollups-sdk": "^0.6.5",
     "@noble/hashes": "^1.6.1",
+    "@solana/spl-token": "^0.4.14",
     "@solana/wallet-adapter-base": "^0.9.27",
     "@solana/wallet-adapter-react": "^0.15.39",
     "@solana/wallet-adapter-react-ui": "^0.9.39",

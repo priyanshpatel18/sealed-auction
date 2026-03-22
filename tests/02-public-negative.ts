@@ -9,14 +9,12 @@ import {
 import {
   auctionPdas,
   bidPda,
-  ensureBidderAta,
-  ensureSellerAta,
   getFixture,
-  mintTokensTo,
-  ASSOCIATED_TOKEN_PROGRAM_ID,
   SystemProgram,
-  TOKEN_PROGRAM_ID,
 } from "./fixture";
+
+/** Reveal amount in cases below (1 SOL). 100 SOL bids exhaust shared fixture keypairs across the suite. */
+const CASE_BID_LAMPORTS = 1_000_000_000;
 
 describe("public mode — negative & invariants", function () {
   this.timeout(240_000);
@@ -25,11 +23,7 @@ describe("public mode — negative & invariants", function () {
   it("initialize rejects bidding_start >= commit_end", async () => {
     const ctx = await f();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const now = Math.floor(Date.now() / 1000);
     try {
       await ctx.program.methods
@@ -38,17 +32,15 @@ describe("public mode — negative & invariants", function () {
           new BN(now + 10),
           new BN(now + 5),
           new BN(now + 20),
-          false
+          false,
+          ""
         )
         .accounts({
           seller: ctx.seller,
-          tokenMint: ctx.mint,
           auction,
           runtime,
           vault,
           systemProgram: SystemProgram.programId,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         })
         .rpc();
       expect.fail("expected CommitWindowClosed");
@@ -60,11 +52,7 @@ describe("public mode — negative & invariants", function () {
   it("initialize rejects commit_end >= reveal_end", async () => {
     const ctx = await f();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const now = Math.floor(Date.now() / 1000);
     try {
       await ctx.program.methods
@@ -73,17 +61,15 @@ describe("public mode — negative & invariants", function () {
           new BN(now - 2),
           new BN(now + 30),
           new BN(now + 20),
-          false
+          false,
+          ""
         )
         .accounts({
           seller: ctx.seller,
-          tokenMint: ctx.mint,
           auction,
           runtime,
           vault,
           systemProgram: SystemProgram.programId,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         })
         .rpc();
       expect.fail("expected RevealWindowClosed");
@@ -95,11 +81,7 @@ describe("public mode — negative & invariants", function () {
   it("commit_bid rejects private_mode auction", async () => {
     const ctx = await f();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const now = Math.floor(Date.now() / 1000);
     await ctx.program.methods
       .initializeAuction(
@@ -107,17 +89,15 @@ describe("public mode — negative & invariants", function () {
         new BN(now - 2),
         new BN(now + 300),
         new BN(now + 600),
-        true
+        true,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
@@ -146,11 +126,7 @@ describe("public mode — negative & invariants", function () {
   it("commit_bid rejects after commit_end", async () => {
     const ctx = await f();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const now = Math.floor(Date.now() / 1000);
     await ctx.program.methods
       .initializeAuction(
@@ -158,17 +134,15 @@ describe("public mode — negative & invariants", function () {
         new BN(now - 400),
         new BN(now - 200),
         new BN(now + 600),
-        false
+        false,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
@@ -197,11 +171,7 @@ describe("public mode — negative & invariants", function () {
   it("commit_bid rejects before bidding_start", async () => {
     const ctx = await f();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const now = Math.floor(Date.now() / 1000);
     await ctx.program.methods
       .initializeAuction(
@@ -209,17 +179,15 @@ describe("public mode — negative & invariants", function () {
         new BN(now + 120),
         new BN(now + 240),
         new BN(now + 360),
-        false
+        false,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
@@ -248,11 +216,7 @@ describe("public mode — negative & invariants", function () {
   it("start_reveal rejects before commit_end", async () => {
     const ctx = await f();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const now = Math.floor(Date.now() / 1000);
     await ctx.program.methods
       .initializeAuction(
@@ -260,17 +224,15 @@ describe("public mode — negative & invariants", function () {
         new BN(now - 2),
         new BN(now + 120),
         new BN(now + 240),
-        false
+        false,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
@@ -288,11 +250,7 @@ describe("public mode — negative & invariants", function () {
   it("start_reveal rejects private auction", async () => {
     const ctx = await f();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const now = Math.floor(Date.now() / 1000);
     await ctx.program.methods
       .initializeAuction(
@@ -300,17 +258,15 @@ describe("public mode — negative & invariants", function () {
         new BN(now - 400),
         new BN(now - 200),
         new BN(now + 600),
-        true
+        true,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
@@ -328,14 +284,7 @@ describe("public mode — negative & invariants", function () {
   it("reveal_bid rejects bid_amount zero", async () => {
     const ctx = await f();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
-    const bidderAta = await ensureBidderAta(ctx, ctx.bidderA.publicKey);
-    await mintTokensTo(ctx, bidderAta.address, 100n * 10n ** 9n);
-
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const now = Math.floor(Date.now() / 1000);
     await ctx.program.methods
       .initializeAuction(
@@ -343,17 +292,15 @@ describe("public mode — negative & invariants", function () {
         new BN(now - 2),
         new BN(now + 5),
         new BN(now + 120),
-        false
+        false,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
@@ -389,9 +336,8 @@ describe("public mode — negative & invariants", function () {
           auction,
           bid,
           runtime,
-          bidderToken: bidderAta.address,
           vault,
-          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
         })
         .signers([ctx.bidderA])
         .rpc();
@@ -404,14 +350,7 @@ describe("public mode — negative & invariants", function () {
   it("reveal_bid rejects wrong salt (commitment mismatch)", async () => {
     const ctx = await f();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
-    const bidderAta = await ensureBidderAta(ctx, ctx.bidderA.publicKey);
-    await mintTokensTo(ctx, bidderAta.address, 500n * 10n ** 9n);
-
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const now = Math.floor(Date.now() / 1000);
     await ctx.program.methods
       .initializeAuction(
@@ -419,22 +358,20 @@ describe("public mode — negative & invariants", function () {
         new BN(now - 2),
         new BN(now + 5),
         new BN(now + 120),
-        false
+        false,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
     const salt = Buffer.from("good");
-    const amt = new BN(200_000_000_000);
+    const amt = new BN(200_000_000);
     const comm = Array.from(
       hashCommitment(auctionId, ctx.bidderA.publicKey, amt, salt)
     ) as number[];
@@ -465,9 +402,8 @@ describe("public mode — negative & invariants", function () {
           auction,
           bid,
           runtime,
-          bidderToken: bidderAta.address,
           vault,
-          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
         })
         .signers([ctx.bidderA])
         .rpc();
@@ -480,13 +416,7 @@ describe("public mode — negative & invariants", function () {
   it("reveal_bid rejects salt longer than MAX_SALT_LEN (65)", async () => {
     const ctx = await f();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
-    const bidderAta = await ensureBidderAta(ctx, ctx.bidderA.publicKey);
-    await mintTokensTo(ctx, bidderAta.address, 500n * 10n ** 9n);
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const longSalt = Buffer.alloc(65, 1);
 
     const now = Math.floor(Date.now() / 1000);
@@ -496,21 +426,19 @@ describe("public mode — negative & invariants", function () {
         new BN(now - 2),
         new BN(now + 5),
         new BN(now + 120),
-        false
+        false,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
-    const amt = new BN(50_000_000_000);
+    const amt = new BN(50_000_000);
     const comm = Array.from(
       hashCommitment(auctionId, ctx.bidderA.publicKey, amt, longSalt.subarray(0, 64))
     ) as number[];
@@ -541,9 +469,8 @@ describe("public mode — negative & invariants", function () {
           auction,
           bid,
           runtime,
-          bidderToken: bidderAta.address,
           vault,
-          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
         })
         .signers([ctx.bidderA])
         .rpc();
@@ -556,12 +483,7 @@ describe("public mode — negative & invariants", function () {
   it("settle_auction rejects private_mode", async () => {
     const ctx = await f();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
-    const sellerAta = await ensureSellerAta(ctx);
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const now = Math.floor(Date.now() / 1000);
     await ctx.program.methods
       .initializeAuction(
@@ -569,17 +491,15 @@ describe("public mode — negative & invariants", function () {
         new BN(now - 2),
         new BN(now + 300),
         new BN(now + 600),
-        true
+        true,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
@@ -590,10 +510,9 @@ describe("public mode — negative & invariants", function () {
           authority: ctx.seller,
           auction,
           vault,
-          sellerToken: sellerAta.address,
-          tokenProgram: TOKEN_PROGRAM_ID,
-        })
-        .rpc();
+        seller: ctx.seller,
+        systemProgram: SystemProgram.programId,
+      }).rpc();
       expect.fail("expected PrivateModeMismatch");
     } catch (e) {
       assertAnchorError(e, "PrivateModeMismatch");
@@ -603,15 +522,7 @@ describe("public mode — negative & invariants", function () {
   it("settle_auction rejects SettlementTooEarly", async () => {
     const ctx = await f();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
-    const sellerAta = await ensureSellerAta(ctx);
-    const bidderAta = await ensureBidderAta(ctx, ctx.bidderA.publicKey);
-    await mintTokensTo(ctx, bidderAta.address, 500n * 10n ** 9n);
-
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const now = Math.floor(Date.now() / 1000);
     await ctx.program.methods
       .initializeAuction(
@@ -619,22 +530,20 @@ describe("public mode — negative & invariants", function () {
         new BN(now - 2),
         new BN(now + 4),
         new BN(now + 10_000),
-        false
+        false,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
     const salt = Buffer.from("s");
-    const amt = new BN(100_000_000_000);
+    const amt = new BN(CASE_BID_LAMPORTS);
     const comm = Array.from(
       hashCommitment(auctionId, ctx.bidderA.publicKey, amt, salt)
     ) as number[];
@@ -664,10 +573,9 @@ describe("public mode — negative & invariants", function () {
         auction,
         bid,
         runtime,
-        bidderToken: bidderAta.address,
-        vault,
-        tokenProgram: TOKEN_PROGRAM_ID,
-      })
+          vault,
+          systemProgram: SystemProgram.programId,
+        })
       .signers([ctx.bidderA])
       .rpc();
 
@@ -678,10 +586,9 @@ describe("public mode — negative & invariants", function () {
           authority: ctx.seller,
           auction,
           vault,
-          sellerToken: sellerAta.address,
-          tokenProgram: TOKEN_PROGRAM_ID,
-        })
-        .rpc();
+        seller: ctx.seller,
+        systemProgram: SystemProgram.programId,
+      }).rpc();
       expect.fail("expected SettlementTooEarly");
     } catch (e) {
       assertAnchorError(e, "SettlementTooEarly");
@@ -691,13 +598,7 @@ describe("public mode — negative & invariants", function () {
   it("settle_auction rejects when no reveals (NoRevealedBids)", async () => {
     const ctx = await f();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
-    const sellerAta = await ensureSellerAta(ctx);
-
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const now = Math.floor(Date.now() / 1000);
     await ctx.program.methods
       .initializeAuction(
@@ -705,17 +606,15 @@ describe("public mode — negative & invariants", function () {
         new BN(now - 500),
         new BN(now - 400),
         new BN(now - 200),
-        false
+        false,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
@@ -731,10 +630,9 @@ describe("public mode — negative & invariants", function () {
           authority: ctx.seller,
           auction,
           vault,
-          sellerToken: sellerAta.address,
-          tokenProgram: TOKEN_PROGRAM_ID,
-        })
-        .rpc();
+        seller: ctx.seller,
+        systemProgram: SystemProgram.programId,
+      }).rpc();
       expect.fail("expected NoRevealedBids");
     } catch (e) {
       assertAnchorError(e, "NoRevealedBids");
@@ -744,11 +642,7 @@ describe("public mode — negative & invariants", function () {
   it("duplicate commit from same bidder fails (account init)", async () => {
     const ctx = await f();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const now = Math.floor(Date.now() / 1000);
     await ctx.program.methods
       .initializeAuction(
@@ -756,17 +650,15 @@ describe("public mode — negative & invariants", function () {
         new BN(now - 2),
         new BN(now + 120),
         new BN(now + 240),
-        false
+        false,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
@@ -808,14 +700,7 @@ describe("public mode — negative & invariants", function () {
   it("second reveal from same bidder fails (BidAlreadyRevealed)", async () => {
     const ctx = await f();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
-    const bidderAta = await ensureBidderAta(ctx, ctx.bidderA.publicKey);
-    await mintTokensTo(ctx, bidderAta.address, 500n * 10n ** 9n);
-
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const now = Math.floor(Date.now() / 1000);
     await ctx.program.methods
       .initializeAuction(
@@ -823,22 +708,20 @@ describe("public mode — negative & invariants", function () {
         new BN(now - 2),
         new BN(now + 5),
         new BN(now + 120),
-        false
+        false,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
     const salt = Buffer.from("s");
-    const amt = new BN(100_000_000_000);
+    const amt = new BN(CASE_BID_LAMPORTS);
     const comm = Array.from(
       hashCommitment(auctionId, ctx.bidderA.publicKey, amt, salt)
     ) as number[];
@@ -868,10 +751,9 @@ describe("public mode — negative & invariants", function () {
         auction,
         bid,
         runtime,
-        bidderToken: bidderAta.address,
-        vault,
-        tokenProgram: TOKEN_PROGRAM_ID,
-      })
+          vault,
+          systemProgram: SystemProgram.programId,
+        })
       .signers([ctx.bidderA])
       .rpc();
 
@@ -883,9 +765,8 @@ describe("public mode — negative & invariants", function () {
           auction,
           bid,
           runtime,
-          bidderToken: bidderAta.address,
           vault,
-          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
         })
         .signers([ctx.bidderA])
         .rpc();
@@ -898,16 +779,7 @@ describe("public mode — negative & invariants", function () {
   it("tie-break: equal bid does not replace leader (strict >)", async () => {
     const ctx = await f();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
-    const aAta = await ensureBidderAta(ctx, ctx.bidderA.publicKey);
-    const bAta = await ensureBidderAta(ctx, ctx.bidderB.publicKey);
-    await mintTokensTo(ctx, aAta.address, 500n * 10n ** 9n);
-    await mintTokensTo(ctx, bAta.address, 500n * 10n ** 9n);
-
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const now = Math.floor(Date.now() / 1000);
     await ctx.program.methods
       .initializeAuction(
@@ -915,21 +787,19 @@ describe("public mode — negative & invariants", function () {
         new BN(now - 2),
         new BN(now + 5),
         new BN(now + 120),
-        false
+        false,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
-    const amt = new BN(100_000_000_000);
+    const amt = new BN(CASE_BID_LAMPORTS);
     const saltA = Buffer.from("a");
     const saltB = Buffer.from("b");
     const commA = Array.from(
@@ -979,10 +849,9 @@ describe("public mode — negative & invariants", function () {
         auction,
         bid: bidA,
         runtime,
-        bidderToken: aAta.address,
-        vault,
-        tokenProgram: TOKEN_PROGRAM_ID,
-      })
+          vault,
+          systemProgram: SystemProgram.programId,
+        })
       .signers([ctx.bidderA])
       .rpc();
 
@@ -993,10 +862,9 @@ describe("public mode — negative & invariants", function () {
         auction,
         bid: bidB,
         runtime,
-        bidderToken: bAta.address,
-        vault,
-        tokenProgram: TOKEN_PROGRAM_ID,
-      })
+          vault,
+          systemProgram: SystemProgram.programId,
+        })
       .signers([ctx.bidderB])
       .rpc();
 

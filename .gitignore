@@ -5,3 +5,7 @@ target
 node_modules
 test-ledger
 .yarn
+
+# Env secrets (Pinata JWT, RPC URLs, etc.)
+**/.env
+!.env.example

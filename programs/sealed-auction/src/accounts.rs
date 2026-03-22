@@ -1,14 +1,14 @@
 // All `#[derive(Accounts)]` structs live at crate root so Anchor's `#[program]` client re-exports
 // (`pub use crate::__client_accounts_*`) resolve correctly.
 
-use anchor_spl::associated_token::AssociatedToken;
-use anchor_spl::token::{Mint, Token, TokenAccount};
+#[allow(unused_imports)]
+use anchor_lang::prelude::*;
 use ephemeral_rollups_sdk::anchor::{commit, delegate};
 
 use crate::errors::SealedAuctionError;
 use crate::state::{
     AuctionConfig, AuctionRuntime, BidCiphertext, BidCommitment, AUCTION_SEED, BID_CIPHER_SEED,
-    BID_SEED, RUNTIME_SEED,
+    BID_SEED, RUNTIME_SEED, VAULT_SEED,
 };
 
 #[derive(Accounts)]
@@ -16,7 +16,6 @@ use crate::state::{
 pub struct InitializeAuction<'info> {
     #[account(mut)]
     pub seller: Signer<'info>,
-    pub token_mint: Account<'info, Mint>,
     #[account(
         init,
         payer = seller,
@@ -36,13 +35,12 @@ pub struct InitializeAuction<'info> {
     #[account(
         init,
         payer = seller,
-        associated_token::mint = token_mint,
-        associated_token::authority = auction,
+        space = 0,
+        seeds = [VAULT_SEED.as_ref(), &auction_id.to_le_bytes()],
+        bump
     )]
-    pub vault: Account<'info, TokenAccount>,
+    pub vault: UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
-    pub token_program: Program<'info, Token>,
-    pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
 #[derive(Accounts)]
@@ -111,16 +109,12 @@ pub struct RevealBid<'info> {
     pub runtime: Account<'info, AuctionRuntime>,
     #[account(
         mut,
-        constraint = bidder_token.owner == bidder.key() @ SealedAuctionError::InsufficientFundsForDeposit,
-        constraint = bidder_token.mint == auction.token_mint @ SealedAuctionError::InvalidMint
-    )]
-    pub bidder_token: Account<'info, TokenAccount>,
-    #[account(
-        mut,
+        seeds = [VAULT_SEED.as_ref(), &auction_id.to_le_bytes()],
+        bump,
         constraint = vault.key() == auction.vault @ SealedAuctionError::InvalidMint
     )]
-    pub vault: Account<'info, TokenAccount>,
-    pub token_program: Program<'info, Token>,
+    pub vault: UncheckedAccount<'info>,
+    pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
@@ -136,16 +130,15 @@ pub struct SettleAuction<'info> {
     pub auction: Account<'info, AuctionConfig>,
     #[account(
         mut,
+        seeds = [VAULT_SEED.as_ref(), &auction_id.to_le_bytes()],
+        bump,
         constraint = vault.key() == auction.vault @ SealedAuctionError::InvalidMint
     )]
-    pub vault: Account<'info, TokenAccount>,
-    #[account(
-        mut,
-        constraint = seller_token.owner == auction.seller @ SealedAuctionError::InvalidMint,
-        constraint = seller_token.mint == auction.token_mint @ SealedAuctionError::InvalidMint
-    )]
-    pub seller_token: Account<'info, TokenAccount>,
-    pub token_program: Program<'info, Token>,
+    pub vault: UncheckedAccount<'info>,
+    /// CHECK: seller receives lamports; must match auction.seller
+    #[account(mut, constraint = seller.key() == auction.seller @ SealedAuctionError::InvalidMint)]
+    pub seller: AccountInfo<'info>,
+    pub system_program: Program<'info, System>,
 }
 
 #[delegate]
@@ -234,14 +227,13 @@ pub struct SettlePrivate<'info> {
     pub auction: Account<'info, AuctionConfig>,
     #[account(
         mut,
+        seeds = [VAULT_SEED.as_ref(), &auction_id.to_le_bytes()],
+        bump,
         constraint = vault.key() == auction.vault @ SealedAuctionError::InvalidMint
     )]
-    pub vault: Account<'info, TokenAccount>,
-    #[account(
-        mut,
-        constraint = seller_token.owner == auction.seller @ SealedAuctionError::InvalidMint,
-        constraint = seller_token.mint == auction.token_mint @ SealedAuctionError::InvalidMint
-    )]
-    pub seller_token: Account<'info, TokenAccount>,
-    pub token_program: Program<'info, Token>,
+    pub vault: UncheckedAccount<'info>,
+    /// CHECK: seller receives lamports; must match auction.seller
+    #[account(mut, constraint = seller.key() == auction.seller @ SealedAuctionError::InvalidMint)]
+    pub seller: AccountInfo<'info>,
+    pub system_program: Program<'info, System>,
 }

@@ -1,13 +1,19 @@
 import { PublicKey } from "@solana/web3.js";
 
-/** Program id from `declare_id!` in `programs/sealed-auction` */
+/**
+ * Program id from `declare_id!` in `programs/sealed-auction`.
+ * The program must be deployed to whatever cluster `NEXT_PUBLIC_BASE_RPC` uses,
+ * and your wallet must be on that same cluster — otherwise simulation fails with
+ * “Attempt to load a program that does not exist”.
+ */
 export const PROGRAM_ID = new PublicKey(
-  "57owAwKC7TkWzsHPdaL7XXWfbj8FS1YUUw4sxWWmBarm"
+  "9msixs2rRpafs5RaCbLxTeNEiZbvg5Qux3L8qENEN4JZ"
 );
 
-/** Base Solana RPC (delegate + base reads) */
-export const BASE_ENDPOINT =
-  process.env.NEXT_PUBLIC_BASE_RPC || "http://127.0.0.1:8899";
+/** Base Solana RPC (delegate + base reads) — must match wallet cluster + deployed program */
+export const BASE_ENDPOINT = (
+  process.env.NEXT_PUBLIC_BASE_RPC || "http://127.0.0.1:8899"
+).trim();
 
 /** MagicBlock router (delegation + validator FQDN) */
 export const ROUTER_ENDPOINT =
@@ -27,6 +33,7 @@ export const TEE_BASE_URL =
 
 export const AUCTION_SEED = Buffer.from("auction");
 export const RUNTIME_SEED = Buffer.from("runtime");
+export const VAULT_SEED = Buffer.from("vault");
 export const BID_SEED = Buffer.from("bid");
 export const BID_CIPHER_SEED = Buffer.from("bid_cipher");
 

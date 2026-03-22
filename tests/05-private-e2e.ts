@@ -10,12 +10,9 @@ import {
 import {
   auctionPdas,
   bidCipherPda,
-  ensureSellerAta,
+  fundVaultSol,
   getFixture,
-  mintTokensTo,
-  ASSOCIATED_TOKEN_PROGRAM_ID,
   SystemProgram,
-  TOKEN_PROGRAM_ID,
 } from "./fixture";
 
 describe("private mode — e2e", function () {
@@ -24,12 +21,7 @@ describe("private mode — e2e", function () {
   it("aggregate + compute_winner_private + settle_private + result_hash parity", async () => {
     const ctx = await getFixture();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
-    const sellerAta = await ensureSellerAta(ctx);
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const bidCipherA = bidCipherPda(ctx.program.programId, auctionId, ctx.bidderA.publicKey);
     const bidCipherB = bidCipherPda(ctx.program.programId, auctionId, ctx.bidderB.publicKey);
 
@@ -43,17 +35,15 @@ describe("private mode — e2e", function () {
         new BN(now - 2),
         new BN(commitEnd),
         new BN(revealEnd),
-        true
+        true,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
@@ -92,9 +82,9 @@ describe("private mode — e2e", function () {
         digest: ciphertextDigestV1(auctionId, ctx.bidderB.publicKey, ctB),
       },
     ]);
-    const winningPrice = new BN(400_000_000_000);
+    const winningPrice = new BN(400_000_000);
 
-    await mintTokensTo(ctx, vault, 2_000_000_000_000n);
+    await fundVaultSol(ctx, vault, 2_000_000_000n);
 
     await sleep(12000);
 
@@ -130,8 +120,8 @@ describe("private mode — e2e", function () {
         authority: ctx.seller,
         auction,
         vault,
-        sellerToken: sellerAta.address,
-        tokenProgram: TOKEN_PROGRAM_ID,
+        seller: ctx.seller,
+        systemProgram: SystemProgram.programId,
       })
       .rpc();
 
@@ -142,12 +132,7 @@ describe("private mode — e2e", function () {
   it("three bidders: aggregate order independent of remaining_accounts order", async () => {
     const ctx = await getFixture();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
-    const sellerAta = await ensureSellerAta(ctx);
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const cA = bidCipherPda(ctx.program.programId, auctionId, ctx.bidderA.publicKey);
     const cB = bidCipherPda(ctx.program.programId, auctionId, ctx.bidderB.publicKey);
     const cC = bidCipherPda(ctx.program.programId, auctionId, ctx.bidderC.publicKey);
@@ -159,17 +144,15 @@ describe("private mode — e2e", function () {
         new BN(now - 2),
         new BN(now + 6),
         new BN(now + 9),
-        true
+        true,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
@@ -209,7 +192,7 @@ describe("private mode — e2e", function () {
       },
     ]);
 
-    await mintTokensTo(ctx, vault, 5_000_000_000_000n);
+    await fundVaultSol(ctx, vault, 5_000_000_000n);
     await sleep(12000);
 
     await ctx.program.methods
@@ -236,8 +219,8 @@ describe("private mode — e2e", function () {
         authority: ctx.seller,
         auction,
         vault,
-        sellerToken: sellerAta.address,
-        tokenProgram: TOKEN_PROGRAM_ID,
+        seller: ctx.seller,
+        systemProgram: SystemProgram.programId,
       })
       .rpc();
   });
@@ -245,12 +228,7 @@ describe("private mode — e2e", function () {
   it("single ciphertext: compute + settle", async () => {
     const ctx = await getFixture();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
-    const sellerAta = await ensureSellerAta(ctx);
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const bc = bidCipherPda(ctx.program.programId, auctionId, ctx.bidderA.publicKey);
 
     const now = Math.floor(Date.now() / 1000);
@@ -260,17 +238,15 @@ describe("private mode — e2e", function () {
         new BN(now - 2),
         new BN(now + 5),
         new BN(now + 8),
-        true
+        true,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
@@ -293,7 +269,7 @@ describe("private mode — e2e", function () {
       },
     ]);
 
-    await mintTokensTo(ctx, vault, 1_000_000_000_000n);
+    await fundVaultSol(ctx, vault, 2_000_000_000n);
     await sleep(12000);
 
     await ctx.program.methods
@@ -313,8 +289,8 @@ describe("private mode — e2e", function () {
         authority: ctx.seller,
         auction,
         vault,
-        sellerToken: sellerAta.address,
-        tokenProgram: TOKEN_PROGRAM_ID,
+        seller: ctx.seller,
+        systemProgram: SystemProgram.programId,
       })
       .rpc();
 

@@ -11,14 +11,15 @@ pub fn initialize_auction_handler(
     commit_end: i64,
     reveal_end: i64,
     private_mode: bool,
+    metadata_uri: String,
 ) -> Result<()> {
+    require!(metadata_uri.len() <= 256, SealedAuctionError::MetadataUriTooLong);
     require!(bidding_start < commit_end, SealedAuctionError::CommitWindowClosed);
     require!(commit_end < reveal_end, SealedAuctionError::RevealWindowClosed);
     let clock = Clock::get()?;
 
     let auction = &mut ctx.accounts.auction;
     auction.seller = ctx.accounts.seller.key();
-    auction.token_mint = ctx.accounts.token_mint.key();
     auction.vault = ctx.accounts.vault.key();
     auction.auction_id = auction_id;
     auction.phase = AuctionPhase::Bidding as u8;
@@ -35,6 +36,7 @@ pub fn initialize_auction_handler(
     auction.reveal_count = 0;
     auction.private_mode = private_mode;
     auction.tee_winner_ready = false;
+    auction.metadata_uri = metadata_uri;
 
     let runtime = &mut ctx.accounts.runtime;
     runtime.auction_id = auction_id;
@@ -47,7 +49,6 @@ pub fn initialize_auction_handler(
     emit!(AuctionInitialized {
         auction_id,
         seller: auction.seller,
-        token_mint: auction.token_mint,
         private_mode,
     });
 

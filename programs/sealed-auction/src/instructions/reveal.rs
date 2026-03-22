@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Transfer as SplTransfer};
+use anchor_lang::system_program::{self, Transfer};
 
 use crate::errors::SealedAuctionError;
 use crate::state::{AuctionPhase, BidRevealed, PhaseChanged};
@@ -62,13 +62,16 @@ pub fn reveal_bid_handler(
         SealedAuctionError::CommitmentMismatch
     );
 
-    let cpi_accounts = SplTransfer {
-        from: ctx.accounts.bidder_token.to_account_info(),
-        to: ctx.accounts.vault.to_account_info(),
-        authority: ctx.accounts.bidder.to_account_info(),
-    };
-    let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
-    token::transfer(cpi_ctx, bid_amount)?;
+    system_program::transfer(
+        CpiContext::new(
+            ctx.accounts.system_program.to_account_info(),
+            Transfer {
+                from: ctx.accounts.bidder.to_account_info(),
+                to: ctx.accounts.vault.to_account_info(),
+            },
+        ),
+        bid_amount,
+    )?;
 
     bid.revealed = true;
     bid.bid_amount = bid_amount;

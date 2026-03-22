@@ -10,12 +10,8 @@ import {
 import {
   auctionPdas,
   bidCipherPda,
-  ensureSellerAta,
   getFixture,
-  mintTokensTo,
-  ASSOCIATED_TOKEN_PROGRAM_ID,
   SystemProgram,
-  TOKEN_PROGRAM_ID,
 } from "./fixture";
 
 describe("private mode — negative & invariants", function () {
@@ -23,11 +19,7 @@ describe("private mode — negative & invariants", function () {
   it("submit_encrypted_bid rejects public auction", async () => {
     const ctx = await getFixture();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const now = Math.floor(Date.now() / 1000);
     await ctx.program.methods
       .initializeAuction(
@@ -35,17 +27,15 @@ describe("private mode — negative & invariants", function () {
         new BN(now - 2),
         new BN(now + 120),
         new BN(now + 240),
-        false
+        false,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
@@ -70,11 +60,7 @@ describe("private mode — negative & invariants", function () {
   it("submit_encrypted_bid rejects after commit_end", async () => {
     const ctx = await getFixture();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const now = Math.floor(Date.now() / 1000);
     await ctx.program.methods
       .initializeAuction(
@@ -82,17 +68,15 @@ describe("private mode — negative & invariants", function () {
         new BN(now - 400),
         new BN(now - 200),
         new BN(now + 600),
-        true
+        true,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
@@ -117,11 +101,7 @@ describe("private mode — negative & invariants", function () {
   it("submit_encrypted_bid rejects ciphertext > 256 bytes", async () => {
     const ctx = await getFixture();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const now = Math.floor(Date.now() / 1000);
     await ctx.program.methods
       .initializeAuction(
@@ -129,17 +109,15 @@ describe("private mode — negative & invariants", function () {
         new BN(now - 2),
         new BN(now + 120),
         new BN(now + 240),
-        true
+        true,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
@@ -164,11 +142,7 @@ describe("private mode — negative & invariants", function () {
   it("compute_winner_private rejects before reveal_end (SettlementTooEarly)", async () => {
     const ctx = await getFixture();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const bcA = bidCipherPda(ctx.program.programId, auctionId, ctx.bidderA.publicKey);
     const now = Math.floor(Date.now() / 1000);
     await ctx.program.methods
@@ -177,17 +151,15 @@ describe("private mode — negative & invariants", function () {
         new BN(now - 2),
         new BN(now + 4),
         new BN(now + 10_000),
-        true
+        true,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
@@ -230,11 +202,7 @@ describe("private mode — negative & invariants", function () {
   it("compute_winner_private rejects winning_price == 0", async () => {
     const ctx = await getFixture();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const bcA = bidCipherPda(ctx.program.programId, auctionId, ctx.bidderA.publicKey);
     const now = Math.floor(Date.now() / 1000);
     await ctx.program.methods
@@ -243,17 +211,15 @@ describe("private mode — negative & invariants", function () {
         new BN(now - 2),
         new BN(now + 5),
         new BN(now + 25),
-        true
+        true,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
@@ -298,11 +264,7 @@ describe("private mode — negative & invariants", function () {
   it("compute_winner_private rejects wrong aggregate (AggregateMismatch)", async () => {
     const ctx = await getFixture();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const bcA = bidCipherPda(ctx.program.programId, auctionId, ctx.bidderA.publicKey);
     const bcB = bidCipherPda(ctx.program.programId, auctionId, ctx.bidderB.publicKey);
     const now = Math.floor(Date.now() / 1000);
@@ -312,17 +274,15 @@ describe("private mode — negative & invariants", function () {
         new BN(now - 2),
         new BN(now + 5),
         new BN(now + 25),
-        true
+        true,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
@@ -376,11 +336,7 @@ describe("private mode — negative & invariants", function () {
   it("compute_winner_private rejects wrong remaining count (AggregateMismatch)", async () => {
     const ctx = await getFixture();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const bcA = bidCipherPda(ctx.program.programId, auctionId, ctx.bidderA.publicKey);
     const bcB = bidCipherPda(ctx.program.programId, auctionId, ctx.bidderB.publicKey);
     const now = Math.floor(Date.now() / 1000);
@@ -390,17 +346,15 @@ describe("private mode — negative & invariants", function () {
         new BN(now - 2),
         new BN(now + 5),
         new BN(now + 25),
-        true
+        true,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
@@ -460,12 +414,7 @@ describe("private mode — negative & invariants", function () {
   it("settle_private rejects before compute (WinnerNotComputed)", async () => {
     const ctx = await getFixture();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
-    const sellerAta = await ensureSellerAta(ctx);
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const now = Math.floor(Date.now() / 1000);
     await ctx.program.methods
       .initializeAuction(
@@ -473,17 +422,15 @@ describe("private mode — negative & invariants", function () {
         new BN(now - 2),
         new BN(now + 120),
         new BN(now + 240),
-        true
+        true,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
@@ -494,10 +441,9 @@ describe("private mode — negative & invariants", function () {
           authority: ctx.seller,
           auction,
           vault,
-          sellerToken: sellerAta.address,
-          tokenProgram: TOKEN_PROGRAM_ID,
-        })
-        .rpc();
+        seller: ctx.seller,
+        systemProgram: SystemProgram.programId,
+      }).rpc();
       expect.fail("expected WinnerNotComputed");
     } catch (e) {
       assertAnchorError(e, "WinnerNotComputed");
@@ -507,12 +453,7 @@ describe("private mode — negative & invariants", function () {
   it("settle_private rejects public auction", async () => {
     const ctx = await getFixture();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
-    const sellerAta = await ensureSellerAta(ctx);
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const now = Math.floor(Date.now() / 1000);
     await ctx.program.methods
       .initializeAuction(
@@ -520,17 +461,15 @@ describe("private mode — negative & invariants", function () {
         new BN(now - 2),
         new BN(now + 120),
         new BN(now + 240),
-        false
+        false,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
@@ -541,10 +480,9 @@ describe("private mode — negative & invariants", function () {
           authority: ctx.seller,
           auction,
           vault,
-          sellerToken: sellerAta.address,
-          tokenProgram: TOKEN_PROGRAM_ID,
-        })
-        .rpc();
+        seller: ctx.seller,
+        systemProgram: SystemProgram.programId,
+      }).rpc();
       expect.fail("expected PrivateModeMismatch");
     } catch (e) {
       assertAnchorError(e, "PrivateModeMismatch");
@@ -554,11 +492,7 @@ describe("private mode — negative & invariants", function () {
   it("duplicate encrypted bid fails (account init)", async () => {
     const ctx = await getFixture();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const now = Math.floor(Date.now() / 1000);
     await ctx.program.methods
       .initializeAuction(
@@ -566,17 +500,15 @@ describe("private mode — negative & invariants", function () {
         new BN(now - 2),
         new BN(now + 120),
         new BN(now + 240),
-        true
+        true,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 
@@ -613,11 +545,7 @@ describe("private mode — negative & invariants", function () {
   it("max length ciphertext (256) accepted", async () => {
     const ctx = await getFixture();
     const auctionId = uniqueAuctionId();
-    const { auction, runtime, vault } = auctionPdas(
-      ctx.program.programId,
-      auctionId,
-      ctx.mint
-    );
+    const { auction, runtime, vault } = auctionPdas(ctx.program.programId, auctionId);
     const bc = bidCipherPda(ctx.program.programId, auctionId, ctx.bidderA.publicKey);
     const now = Math.floor(Date.now() / 1000);
     await ctx.program.methods
@@ -626,17 +554,15 @@ describe("private mode — negative & invariants", function () {
         new BN(now - 2),
         new BN(now + 120),
         new BN(now + 240),
-        true
+        true,
+        ""
       )
       .accounts({
         seller: ctx.seller,
-        tokenMint: ctx.mint,
         auction,
         runtime,
         vault,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc();
 

@@ -12,7 +12,6 @@ import {
 describe("crypto parity (matches on-chain utils)", () => {
   const auctionId = new BN(999001);
   const bidder = Keypair.generate().publicKey;
-  const mint = Keypair.generate().publicKey;
   const winner = Keypair.generate().publicKey;
 
   it("commitment hash is 32 bytes", () => {
@@ -41,15 +40,15 @@ describe("crypto parity (matches on-chain utils)", () => {
 
   it("result:v1 is deterministic", () => {
     const p = new BN(100);
-    const a = resultHashV1(auctionId, winner, p, 3, 2, mint);
-    const b = resultHashV1(auctionId, winner, p, 3, 2, mint);
+    const a = resultHashV1(auctionId, winner, p, 3, 2);
+    const b = resultHashV1(auctionId, winner, p, 3, 2);
     expect(a.equals(b)).to.eq(true);
   });
 
   it("result:v1 differs when commit_count differs", () => {
     const p = new BN(100);
-    const a = resultHashV1(auctionId, winner, p, 3, 2, mint);
-    const b = resultHashV1(auctionId, winner, p, 4, 2, mint);
+    const a = resultHashV1(auctionId, winner, p, 3, 2);
+    const b = resultHashV1(auctionId, winner, p, 4, 2);
     expect(a.equals(b)).to.eq(false);
   });
 
@@ -99,12 +98,10 @@ describe("crypto parity (matches on-chain utils)", () => {
     expect(agg.length).to.eq(32);
   });
 
-  it("result:v1 differs when mint differs", () => {
-    const m1 = Keypair.generate().publicKey;
-    const m2 = Keypair.generate().publicKey;
-    const a = resultHashV1(auctionId, winner, new BN(1), 1, 1, m1);
-    const b = resultHashV1(auctionId, winner, new BN(1), 1, 1, m2);
-    expect(a.equals(b)).to.eq(false);
+  it("result:v1 is fixed for native SOL (no mint in domain)", () => {
+    const a = resultHashV1(auctionId, winner, new BN(1), 1, 1);
+    const b = resultHashV1(auctionId, winner, new BN(1), 1, 1);
+    expect(a.equals(b)).to.eq(true);
   });
 
   it("result:private:v1 differs when winner differs", () => {

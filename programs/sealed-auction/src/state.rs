@@ -4,6 +4,7 @@ pub const AUCTION_SEED: &[u8] = b"auction";
 pub const RUNTIME_SEED: &[u8] = b"runtime";
 pub const BID_SEED: &[u8] = b"bid";
 pub const BID_CIPHER_SEED: &[u8] = b"bid_cipher";
+pub const VAULT_SEED: &[u8] = b"vault";
 
 pub const MAX_SALT_LEN: usize = 64;
 pub const MAX_CIPHERTEXT_LEN: usize = 256;
@@ -26,7 +27,6 @@ impl Default for AuctionPhase {
 #[derive(InitSpace)]
 pub struct AuctionConfig {
     pub seller: Pubkey,
-    pub token_mint: Pubkey,
     pub vault: Pubkey,
     pub auction_id: u64,
     pub phase: u8,
@@ -45,6 +45,9 @@ pub struct AuctionConfig {
     pub private_mode: bool,
     /// TEE stage: computed before settle_private.
     pub tee_winner_ready: bool,
+    /// IPFS gateway URL for listing JSON (`title`, `description`, `image`).
+    #[max_len(256)]
+    pub metadata_uri: String,
 }
 
 #[account]
@@ -85,7 +88,6 @@ pub struct BidCiphertext {
 pub struct AuctionInitialized {
     pub auction_id: u64,
     pub seller: Pubkey,
-    pub token_mint: Pubkey,
     pub private_mode: bool,
 }
 

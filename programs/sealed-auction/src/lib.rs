@@ -13,7 +13,7 @@ use instructions::{
     submit_encrypted_bid_handler, undelegate_runtime_handler,
 };
 
-declare_id!("57owAwKC7TkWzsHPdaL7XXWfbj8FS1YUUw4sxWWmBarm");
+declare_id!("9msixs2rRpafs5RaCbLxTeNEiZbvg5Qux3L8qENEN4JZ");
 
 #[ephemeral]
 #[program]
@@ -27,6 +27,7 @@ pub mod sealed_auction_program {
         commit_end: i64,
         reveal_end: i64,
         private_mode: bool,
+        metadata_uri: String,
     ) -> Result<()> {
         initialize_auction_handler(
             ctx,
@@ -35,6 +36,7 @@ pub mod sealed_auction_program {
             commit_end,
             reveal_end,
             private_mode,
+            metadata_uri,
         )
     }
 

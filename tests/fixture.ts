@@ -1,14 +1,13 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program, Wallet } from "@coral-xyz/anchor";
-import { Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
 import {
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-  TOKEN_PROGRAM_ID,
-  createMint,
-  getAssociatedTokenAddressSync,
-  getOrCreateAssociatedTokenAccount,
-  mintTo,
-} from "@solana/spl-token";
+  Keypair,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+  SystemProgram,
+  Transaction,
+  sendAndConfirmTransaction,
+} from "@solana/web3.js";
 import { readFileSync } from "fs";
 import { join } from "path";
 import type { SealedAuctionProgram } from "../target/types/sealed_auction_program";
@@ -25,7 +24,6 @@ export type AuctionFixture = {
   bidderA: Keypair;
   bidderB: Keypair;
   bidderC: Keypair;
-  mint: PublicKey;
 };
 
 let cached: AuctionFixture | null = null;
@@ -45,15 +43,14 @@ export async function getFixture(): Promise<AuctionFixture> {
   const bidderB = Keypair.generate();
   const bidderC = Keypair.generate();
 
+  // Shared keypairs run the whole suite; fund enough for many commits/reveals + fees.
   for (const kp of [bidderA, bidderB, bidderC]) {
     const sig = await provider.connection.requestAirdrop(
       kp.publicKey,
-      2 * LAMPORTS_PER_SOL
+      120 * LAMPORTS_PER_SOL
     );
     await provider.connection.confirmTransaction(sig, "confirmed");
   }
-
-  const mint = await createMint(provider.connection, payer, seller, null, 9);
 
   cached = {
     program,
@@ -63,16 +60,18 @@ export async function getFixture(): Promise<AuctionFixture> {
     bidderA,
     bidderB,
     bidderC,
-    mint,
   };
   return cached;
 }
 
-export function auctionPdas(
-  programId: PublicKey,
-  auctionId: anchor.BN,
-  mint: PublicKey
-) {
+export function vaultPda(programId: PublicKey, auctionId: anchor.BN): PublicKey {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("vault"), auctionId.toArrayLike(Buffer, "le", 8)],
+    programId
+  )[0];
+}
+
+export function auctionPdas(programId: PublicKey, auctionId: anchor.BN) {
   const aid = auctionId.toArrayLike(Buffer, "le", 8);
   const auction = PublicKey.findProgramAddressSync(
     [Buffer.from("auction"), aid],
@@ -82,13 +81,7 @@ export function auctionPdas(
     [Buffer.from("runtime"), aid],
     programId
   )[0];
-  const vault = getAssociatedTokenAddressSync(
-    mint,
-    auction,
-    true,
-    TOKEN_PROGRAM_ID,
-    ASSOCIATED_TOKEN_PROGRAM_ID
-  );
+  const vault = vaultPda(programId, auctionId);
   return { auction, runtime, vault };
 }
 
@@ -114,30 +107,20 @@ export function bidCipherPda(programId: PublicKey, auctionId: anchor.BN, bidder:
   )[0];
 }
 
-export async function ensureSellerAta(f: AuctionFixture) {
-  return getOrCreateAssociatedTokenAccount(
-    f.provider.connection,
-    f.payer,
-    f.mint,
-    f.seller
-  );
-}
-
-export async function ensureBidderAta(f: AuctionFixture, bidder: PublicKey) {
-  return getOrCreateAssociatedTokenAccount(
-    f.provider.connection,
-    f.payer,
-    f.mint,
-    bidder
-  );
-}
-
-export async function mintTokensTo(
+/** Fund the auction vault with native SOL (e.g. private-mode demos). */
+export async function fundVaultSol(
   f: AuctionFixture,
-  dest: PublicKey,
-  amount: bigint
+  vault: PublicKey,
+  lamports: bigint | number
 ) {
-  await mintTo(f.provider.connection, f.payer, f.mint, dest, f.seller, amount);
+  const lam = typeof lamports === "bigint" ? Number(lamports) : lamports;
+  const ix = SystemProgram.transfer({
+    fromPubkey: f.payer.publicKey,
+    toPubkey: vault,
+    lamports: lam,
+  });
+  const tx = new Transaction().add(ix);
+  await sendAndConfirmTransaction(f.provider.connection, tx, [f.payer]);
 }
 
-export { SystemProgram, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID };
+export { SystemProgram };

@@ -8,7 +8,10 @@ skip-lint = false
 
 [programs.localnet]
 # Key must match IDL filename stem: `target/idl/sealed_auction_program.json`
-sealed_auction_program = "57owAwKC7TkWzsHPdaL7XXWfbj8FS1YUUw4sxWWmBarm"
+sealed_auction_program = "9msixs2rRpafs5RaCbLxTeNEiZbvg5Qux3L8qENEN4JZ"
+
+[programs.devnet]
+sealed_auction_program = "9msixs2rRpafs5RaCbLxTeNEiZbvg5Qux3L8qENEN4JZ"
 
 [registry]
 url = "https://api.apr.dev"

@@ -1,18 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import * as anchor from "@coral-xyz/anchor";
 import type { Program } from "@coral-xyz/anchor";
-import { Connection } from "@solana/web3.js";
-import type { SealedAuctionProgram } from "@/types/sealed_auction_program";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import BN from "bn.js";
 import Link from "next/link";
-import {
-  BASE_ENDPOINT,
-  EPHEMERAL_ENDPOINT,
-  PLAYER_STORAGE_KEY,
-} from "@/lib/config";
+import { EPHEMERAL_ENDPOINT, PLAYER_STORAGE_KEY } from "@/lib/config";
+import { fetchAuctionConfigAccount } from "@/lib/auctionConfigDecode";
+import { anchorWalletFromAdapter } from "@/lib/anchorWallet";
 import { programFor } from "@/lib/program";
+import type { SealedAuctionProgram } from "@/types/sealed_auction_program";
 import { auctionPda, bidCipherPda } from "@/lib/pdas";
 import {
   aggregateCiphertextDigestsV1,
@@ -20,9 +17,11 @@ import {
   resultHashPrivateV1,
 } from "@/lib/crypto";
 import { connectPrivateTee } from "@/lib/tee";
-import { ensureFunds, walletAdapterFrom } from "@/lib/solana";
+import { ensureFunds, ensureWalletFunds, walletAdapterFrom } from "@/lib/solana";
 
 export default function PrivateAuctionPage() {
+  const { connection } = useConnection();
+  const wallet = useWallet();
   const [auctionIdStr, setAuctionIdStr] = useState("1");
   const [teeUrl, setTeeUrl] = useState<string | null>(null);
   const [teeErr, setTeeErr] = useState<string | null>(null);
@@ -44,15 +43,18 @@ export default function PrivateAuctionPage() {
   })();
 
   const init = useCallback(async () => {
-    const { Keypair } = await import("@solana/web3.js");
+    const aw = anchorWalletFromAdapter(wallet);
+    if (aw) {
+      await ensureWalletFunds(connection, aw.publicKey);
+      progRef.current = programFor(connection, aw);
+      return;
+    }
     const { loadOrCreateKeypair } = await import("@/lib/solana");
     if (!kpRef.current) kpRef.current = loadOrCreateKeypair(PLAYER_STORAGE_KEY);
     const kp = kpRef.current!;
-    const conn = new Connection(BASE_ENDPOINT, "confirmed");
-    await ensureFunds(conn, kp);
-    const wallet = walletAdapterFrom(kp);
-    progRef.current = programFor(conn, wallet);
-  }, []);
+    await ensureFunds(connection, kp);
+    progRef.current = programFor(connection, walletAdapterFrom(kp));
+  }, [connection, wallet]);
 
   useEffect(() => {
     init().catch(console.error);
@@ -61,15 +63,19 @@ export default function PrivateAuctionPage() {
   const refreshAuction = useCallback(async () => {
     const prog = progRef.current;
     if (!prog) return;
-    try {
-      const acct = await prog.account.auctionConfig.fetch(auctionPda(auctionIdBn));
-      setAuctionPhase(acct.phase);
-      setWinner(acct.winner.toBase58());
-      setResultHashHex(Buffer.from(acct.resultHash).toString("hex"));
-    } catch {
+    const acct = await fetchAuctionConfigAccount(
+      connection,
+      prog,
+      auctionPda(auctionIdBn)
+    );
+    if (!acct) {
       setAuctionPhase(null);
+      return;
     }
-  }, [auctionIdBn]);
+    setAuctionPhase(acct.phase);
+    setWinner(acct.winner.toBase58());
+    setResultHashHex(Buffer.from(acct.resultHash).toString("hex"));
+  }, [auctionIdBn, connection]);
 
   useEffect(() => {
     refreshAuction().catch(console.error);
@@ -102,9 +108,17 @@ export default function PrivateAuctionPage() {
   /** Demo-only: recompute expected result_hash from on-chain winner + mock winning price + ciphertext PDAs */
   const onVerifyResultHash = async () => {
     const prog = progRef.current;
-    if (!prog || !kpRef.current) return;
+    if (!prog) return;
     try {
-      const acct = await prog.account.auctionConfig.fetch(auctionPda(auctionIdBn));
+      const acct = await fetchAuctionConfigAccount(
+        connection,
+        prog,
+        auctionPda(auctionIdBn)
+      );
+      if (!acct) {
+        setVerifyOk(false);
+        return;
+      }
       const winningPrice = new BN(acct.winningPrice.toString());
       const winPk = acct.winner;
       const rows: { bidder: import("@solana/web3.js").PublicKey; digest: Buffer }[] =

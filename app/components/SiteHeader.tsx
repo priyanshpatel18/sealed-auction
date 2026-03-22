@@ -1,13 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import { CreateAuctionDialog } from "@/components/auction/CreateAuctionDialog";
+import { SiteHeaderWallet } from "@/components/SiteHeaderWallet";
 
 export function SiteHeader() {
-  const [createOpen, setCreateOpen] = useState(false);
-
   return (
     <>
       <header className="sticky top-0 z-30 h-[var(--site-header-height)] shrink-0 border-b border-brand-muted/50 bg-brand-bg/90 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.45)] backdrop-blur-2xl backdrop-saturate-150 supports-[backdrop-filter]:bg-brand-bg/70">
@@ -34,23 +30,22 @@ export function SiteHeader() {
             >
               Discover
             </Link>
-            <button
-              type="button"
-              onClick={() => setCreateOpen(true)}
+            <Link
+              href="/create-auction"
               className="text-brand-muted transition hover:text-brand-lime focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-lime focus-visible:ring-offset-2 focus-visible:ring-offset-brand-bg"
             >
               Create
-            </button>
-            <div className="site-header-wallet">
-              <WalletMultiButton />
-            </div>
+            </Link>
+            <Link
+              href="/auction"
+              className="text-brand-muted transition hover:text-brand-lime focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-lime focus-visible:ring-offset-2 focus-visible:ring-offset-brand-bg"
+            >
+              Trade
+            </Link>
+            <SiteHeaderWallet />
           </nav>
         </div>
       </header>
-      <CreateAuctionDialog
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-      />
     </>
   );
 }

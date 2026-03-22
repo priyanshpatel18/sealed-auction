@@ -1,9 +1,10 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Transfer as SplTransfer};
 
 use crate::errors::SealedAuctionError;
 use crate::state::{AuctionPhase, BidCiphertext, PrivateWinnerComputed, BID_CIPHER_SEED};
-use crate::utils::{aggregate_ciphertext_digests_v1, ciphertext_digest_v1, result_hash_private_v1};
+use crate::utils::{
+    aggregate_ciphertext_digests_v1, ciphertext_digest_v1, result_hash_private_v1, transfer_lamports,
+};
 use crate::{ComputeWinnerPrivate, SettlePrivate, SubmitEncryptedBid};
 
 pub fn submit_encrypted_bid_handler(
@@ -121,7 +122,7 @@ pub fn compute_winner_private_handler(
 }
 
 /// Pay seller from vault. Deposits for private mode must be provisioned separately (e.g. direct vault transfers in demo).
-pub fn settle_private_handler(ctx: Context<SettlePrivate>, auction_id: u64) -> Result<()> {
+pub fn settle_private_handler(ctx: Context<SettlePrivate>, _auction_id: u64) -> Result<()> {
     require!(ctx.accounts.auction.private_mode, SealedAuctionError::PrivateModeMismatch);
     require!(ctx.accounts.auction.tee_winner_ready, SealedAuctionError::WinnerNotComputed);
     require!(
@@ -130,21 +131,9 @@ pub fn settle_private_handler(ctx: Context<SettlePrivate>, auction_id: u64) -> R
     );
 
     let winning_price = ctx.accounts.auction.winning_price;
-    let bump = ctx.accounts.auction.bump;
-    let seeds: &[&[u8]] = &[crate::state::AUCTION_SEED, &auction_id.to_le_bytes(), &[bump]];
-    let signer_seeds: &[&[&[u8]]] = &[seeds];
-
-    let pay_seller = SplTransfer {
-        from: ctx.accounts.vault.to_account_info(),
-        to: ctx.accounts.seller_token.to_account_info(),
-        authority: ctx.accounts.auction.to_account_info(),
-    };
-    token::transfer(
-        CpiContext::new_with_signer(
-            ctx.accounts.token_program.to_account_info(),
-            pay_seller,
-            signer_seeds,
-        ),
+    transfer_lamports(
+        &ctx.accounts.vault.to_account_info(),
+        &ctx.accounts.seller.to_account_info(),
         winning_price,
     )?;
 

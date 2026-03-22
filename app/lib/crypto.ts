@@ -6,6 +6,47 @@ function toBuf(u: Uint8Array): Buffer {
   return Buffer.from(u);
 }
 
+/** Same construction as `tests/test-utils.ts` / on-chain `hash_commitment`. */
+export function hashCommitment(
+  auctionId: BN,
+  bidder: PublicKey,
+  amount: BN,
+  salt: Buffer
+): Buffer {
+  const parts = [
+    new TextEncoder().encode("sealed-auction:v1"),
+    Buffer.from(auctionId.toArray("le", 8)),
+    bidder.toBuffer(),
+    Buffer.from(amount.toArray("le", 8)),
+    salt,
+  ];
+  return toBuf(sha256(Buffer.concat(parts)));
+}
+
+/** Parity with `utils::result_hash_v1` / `tests/test-utils.ts` (native SOL — 32 zero bytes). */
+export function resultHashV1(
+  auctionId: BN,
+  winner: PublicKey,
+  winningPrice: BN,
+  commitCount: number,
+  revealCount: number
+): Buffer {
+  const cc = Buffer.alloc(4);
+  cc.writeUInt32LE(commitCount, 0);
+  const rc = Buffer.alloc(4);
+  rc.writeUInt32LE(revealCount, 0);
+  const parts = [
+    new TextEncoder().encode("result:v1"),
+    Buffer.from(auctionId.toArray("le", 8)),
+    winner.toBuffer(),
+    Buffer.from(winningPrice.toArray("le", 8)),
+    cc,
+    rc,
+    Buffer.alloc(32, 0),
+  ];
+  return toBuf(sha256(Buffer.concat(parts)));
+}
+
 /** Mirrors `utils::ciphertext_digest_v1` */
 export function ciphertextDigestV1(
   auctionId: BN,
