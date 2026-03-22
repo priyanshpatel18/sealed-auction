@@ -28,6 +28,7 @@ export async function pinAuctionMetadata(payload: {
   title: string;
   description: string;
   imageUrl?: string | null;
+  startingPriceSol?: string | null;
 }): Promise<{ ipfsHash: string; gatewayUrl: string }> {
   const res = await fetch("/api/pinata/metadata", {
     method: "POST",

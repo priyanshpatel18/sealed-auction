@@ -18,6 +18,9 @@ import { programFor } from "@/lib/program";
 import { pinAuctionMetadata, uploadFileToPinata } from "@/lib/pinataClient";
 import { auctionPda, runtimePda, vaultPda } from "@/lib/pdas";
 import { ensureWalletFunds } from "@/lib/solana";
+import type { AuctionMetadataJson } from "@/lib/programAuctions";
+import { startingPriceSolFromMetadata } from "@/lib/programAuctions";
+import { walletRpcMismatchMessage } from "@/lib/rpc";
 import { friendlyTxError } from "@/lib/walletErrors";
 import { OnchainAuctionPanel } from "@/components/onchain/OnchainAuctionPanel";
 import { AuctionPreviewCard } from "@/components/create-auction/AuctionPreviewCard";
@@ -75,22 +78,23 @@ export default function CreateAuctionPage() {
     null
   );
   /** Fetched from `metadataGatewayUrl` via `/api/metadata-proxy` after pin. */
-  const [ipfsMetadataPreview, setIpfsMetadataPreview] = useState<{
-    title?: string;
-    name?: string;
-    description?: string;
-    image?: string;
-  } | null>(null);
+  const [ipfsMetadataPreview, setIpfsMetadataPreview] =
+    useState<AuctionMetadataJson | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [onchainSnapshot, setOnchainSnapshot] =
     useState<OnchainAuctionSnapshot | null>(null);
   const [onchainLoading, setOnchainLoading] = useState(false);
   const [onchainError, setOnchainError] = useState<string | null>(null);
 
+  const activeRpc = connection.rpcEndpoint || BASE_ENDPOINT;
   const explorerCluster = useMemo(
-    () =>
-      explorerClusterFromRpc(connection.rpcEndpoint || BASE_ENDPOINT),
-    [connection.rpcEndpoint]
+    () => explorerClusterFromRpc(activeRpc),
+    [activeRpc]
+  );
+
+  const createRpcMismatchWarning = useMemo(
+    () => walletRpcMismatchMessage(activeRpc, BASE_ENDPOINT),
+    [activeRpc]
   );
 
   const auctionIdBn = useMemo(() => {
@@ -119,12 +123,7 @@ export default function CreateAuctionPage() {
           `/api/metadata-proxy?url=${encodeURIComponent(metadataGatewayUrl)}`
         );
         if (!r.ok || cancelled) return;
-        const j = (await r.json()) as {
-          title?: string;
-          name?: string;
-          description?: string;
-          image?: string;
-        };
+        const j = (await r.json()) as AuctionMetadataJson;
         if (!cancelled) setIpfsMetadataPreview(j);
       } catch {
         if (!cancelled) setIpfsMetadataPreview(null);
@@ -269,6 +268,7 @@ export default function CreateAuctionPage() {
           title: title.trim(),
           description: description.trim(),
           imageUrl: coverImageUrl,
+          startingPriceSol: startingPrice.trim() || null,
         });
         setMetadataGatewayUrl(metaUrl);
 
@@ -298,7 +298,7 @@ export default function CreateAuctionPage() {
           .rpc();
 
         setTxSignature(sig);
-        rememberCreatedAuction(auctionIdStr, sig);
+        rememberCreatedAuction(auctionIdStr, sig, connection.rpcEndpoint);
       } catch (err) {
         console.error(err);
         setFormError(await friendlyTxError(err, connection));
@@ -316,6 +316,7 @@ export default function CreateAuctionPage() {
       imageFile,
       title,
       description,
+      startingPrice,
       connection,
       auctionIdBn,
     ]
@@ -446,6 +447,12 @@ export default function CreateAuctionPage() {
                           {ipfsMetadataPreview.description}
                         </p>
                       ) : null}
+                      {startingPriceSolFromMetadata(ipfsMetadataPreview) ? (
+                        <p className="mt-2 text-xs font-medium text-brand-lime">
+                          Starting at{" "}
+                          {startingPriceSolFromMetadata(ipfsMetadataPreview)} SOL
+                        </p>
+                      ) : null}
                     </div>
                   ) : null}
                   <p className="mt-3 text-xs text-brand-muted">
@@ -494,6 +501,7 @@ export default function CreateAuctionPage() {
                     snapshot={onchainSnapshot}
                     cluster={explorerCluster}
                     txSignature={txSignature}
+                    rpcMismatchWarning={createRpcMismatchWarning}
                   />
                 ) : null}
               </div>

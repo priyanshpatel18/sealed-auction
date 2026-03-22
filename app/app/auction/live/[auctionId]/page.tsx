@@ -8,10 +8,12 @@ import BN from "bn.js";
 import { OnchainAuctionPanel } from "@/components/onchain/OnchainAuctionPanel";
 import { BASE_ENDPOINT } from "@/lib/config";
 import {
-  fetchOnchainAuctionSnapshot,
+  describeAuctionLoadFailure,
+  loadOnchainAuctionSnapshot,
   type OnchainAuctionSnapshot,
 } from "@/lib/onchainAuction";
 import { explorerClusterFromRpc } from "@/lib/explorer";
+import { walletRpcMismatchMessage } from "@/lib/rpc";
 
 export default function LiveAuctionPage() {
   const { connection } = useConnection();
@@ -27,9 +29,15 @@ export default function LiveAuctionPage() {
     }
   }, [auctionIdStr]);
 
+  const activeRpc = connection.rpcEndpoint || BASE_ENDPOINT;
   const cluster = useMemo(
-    () => explorerClusterFromRpc(connection.rpcEndpoint || BASE_ENDPOINT),
-    [connection.rpcEndpoint]
+    () => explorerClusterFromRpc(activeRpc),
+    [activeRpc]
+  );
+
+  const rpcMismatchWarning = useMemo(
+    () => walletRpcMismatchMessage(activeRpc, BASE_ENDPOINT),
+    [activeRpc]
   );
 
   const [snapshot, setSnapshot] = useState<OnchainAuctionSnapshot | null>(null);
@@ -48,10 +56,17 @@ export default function LiveAuctionPage() {
     setError(null);
     (async () => {
       try {
-        const snap = await fetchOnchainAuctionSnapshot(connection, auctionIdBn);
+        const result = await loadOnchainAuctionSnapshot(connection, auctionIdBn);
         if (!cancelled) {
-          setSnapshot(snap);
-          setError(snap ? null : "No auction account at this id (wrong cluster or not initialized).");
+          if (result.ok) {
+            setSnapshot(result.snapshot);
+            setError(null);
+          } else {
+            setSnapshot(null);
+            setError(
+              describeAuctionLoadFailure(result.failure, activeRpc)
+            );
+          }
         }
       } catch (e) {
         if (!cancelled) {
@@ -65,7 +80,7 @@ export default function LiveAuctionPage() {
     return () => {
       cancelled = true;
     };
-  }, [connection, auctionIdBn, auctionIdStr]);
+  }, [connection, auctionIdBn, auctionIdStr, activeRpc]);
 
   return (
     <div className="relative z-10 mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
@@ -84,7 +99,14 @@ export default function LiveAuctionPage() {
           Auction {auctionIdStr || "—"}
         </h1>
         <p className="mt-2 text-sm text-brand-muted">
-          Live read from <span className="font-mono text-xs">{BASE_ENDPOINT}</span>
+          Live read via wallet RPC{" "}
+          <span className="break-all font-mono text-xs text-brand-cream/85">
+            {activeRpc}
+          </span>
+        </p>
+        <p className="mt-1 text-xs text-brand-muted">
+          App default <code className="text-brand-cream/70">NEXT_PUBLIC_BASE_RPC</code>:{" "}
+          <span className="break-all font-mono">{BASE_ENDPOINT}</span>
         </p>
       </header>
 
@@ -96,7 +118,11 @@ export default function LiveAuctionPage() {
             {error}
           </p>
         ) : snapshot ? (
-          <OnchainAuctionPanel snapshot={snapshot} cluster={cluster} />
+          <OnchainAuctionPanel
+            snapshot={snapshot}
+            cluster={cluster}
+            rpcMismatchWarning={rpcMismatchWarning}
+          />
         ) : null}
       </div>
     </div>

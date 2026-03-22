@@ -104,6 +104,11 @@ function AuctionProgramCard({ row, nowMs }: { row: ProgramAuctionListItem; nowMs
           <span className="text-brand-muted">ID </span>
           <span className="font-mono tabular-nums text-brand-cream/80">{row.auctionId}</span>
         </p>
+        {row.startingPriceSol ? (
+          <p className="mt-2 text-sm font-medium text-brand-lime">
+            Starting at {row.startingPriceSol} SOL
+          </p>
+        ) : null}
         <dl className="mt-auto flex flex-wrap gap-x-6 gap-y-2 border-t border-brand-muted/30 pt-4 text-xs">
           {accepting && commitEndsLabel ? (
             <div>
@@ -145,7 +150,7 @@ export function ProgramAuctionsGrid() {
     if (!needle) return scopeRows;
     return scopeRows.filter((r) => {
       const blob =
-        `${r.title} ${r.description} ${r.shortDescription} ${r.auctionId} ${r.seller}`.toLowerCase();
+        `${r.title} ${r.description} ${r.shortDescription} ${r.auctionId} ${r.seller} ${r.startingPriceSol ?? ""}`.toLowerCase();
       return blob.includes(needle);
     });
   }, [scopeRows, q]);

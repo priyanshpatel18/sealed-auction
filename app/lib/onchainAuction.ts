@@ -49,23 +49,88 @@ export function formatSol(lamports: number, maxFractionDigits = 6): string {
   })} SOL`;
 }
 
-export async function fetchOnchainAuctionSnapshot(
+export type LoadOnchainAuctionFailure =
+  | {
+      reason: "no_account";
+      auctionPda: string;
+    }
+  | {
+      reason: "wrong_owner";
+      auctionPda: string;
+      actualOwner: string;
+      expectedProgram: string;
+    }
+  | {
+      reason: "decode_failed";
+      auctionPda: string;
+      message: string;
+    };
+
+export type LoadOnchainAuctionResult =
+  | { ok: true; snapshot: OnchainAuctionSnapshot }
+  | { ok: false; failure: LoadOnchainAuctionFailure };
+
+/** Short message for live page / debugging when a load fails. */
+export function describeAuctionLoadFailure(
+  failure: LoadOnchainAuctionFailure,
+  rpcLabel?: string
+): string {
+  const rpc = rpcLabel?.trim() || "this RPC";
+  switch (failure.reason) {
+    case "no_account":
+      return `No auction account at the program-derived address on ${rpc}. Usual causes: this auction id was never initialized on this cluster, or your wallet RPC does not match the cluster where you created it (check devnet vs mainnet vs local). PDA: ${failure.auctionPda}.`;
+    case "wrong_owner":
+      return `Unexpected account owner at auction PDA (owner ${failure.actualOwner.slice(0, 12)}…, expected program ${failure.expectedProgram.slice(0, 12)}…).`;
+    case "decode_failed":
+      return `Account data does not match the app IDL: ${failure.message}`;
+  }
+}
+
+/**
+ * Same as {@link fetchOnchainAuctionSnapshot} but distinguishes missing account,
+ * wrong program owner, and IDL/layout decode errors (all previously surfaced as `null`).
+ */
+export async function loadOnchainAuctionSnapshot(
   connection: Connection,
   auctionIdBn: BN
-): Promise<OnchainAuctionSnapshot | null> {
+): Promise<LoadOnchainAuctionResult> {
   const program = programReadOnly(connection);
   const ap = auctionPda(auctionIdBn);
   const rp = runtimePda(auctionIdBn);
   const vp = vaultPda(auctionIdBn);
 
   const info = await connection.getAccountInfo(ap);
-  if (!info?.data.length) return null;
+  if (!info?.data.length) {
+    return {
+      ok: false,
+      failure: { reason: "no_account", auctionPda: ap.toBase58() },
+    };
+  }
+
+  if (!info.owner.equals(program.programId)) {
+    return {
+      ok: false,
+      failure: {
+        reason: "wrong_owner",
+        auctionPda: ap.toBase58(),
+        actualOwner: info.owner.toBase58(),
+        expectedProgram: program.programId.toBase58(),
+      },
+    };
+  }
 
   let raw;
   try {
     raw = decodeAuctionConfigData(program, info.data);
-  } catch {
-    return null;
+  } catch (e) {
+    return {
+      ok: false,
+      failure: {
+        reason: "decode_failed",
+        auctionPda: ap.toBase58(),
+        message: e instanceof Error ? e.message : String(e),
+      },
+    };
   }
 
   let runtime: OnchainAuctionSnapshot["runtime"] = null;
@@ -88,32 +153,43 @@ export async function fetchOnchainAuctionSnapshot(
   const rh = raw.resultHash as unknown as number[] | Uint8Array;
 
   return {
-    config: {
-      seller: raw.seller.toBase58(),
-      vault: raw.vault.toBase58(),
-      auctionId: raw.auctionId.toString(),
-      phase: raw.phase,
-      biddingStartSec: raw.biddingStart.toNumber(),
-      commitEndSec: raw.commitEnd.toNumber(),
-      revealEndSec: raw.revealEnd.toNumber(),
-      leaderBidder: raw.leaderBidder.toBase58(),
-      leaderBid: raw.leaderBid.toString(),
-      winner: raw.winner.toBase58(),
-      winningPrice: raw.winningPrice.toString(),
-      resultHashHex: bytesToHex(rh),
-      commitCount: raw.commitCount,
-      revealCount: raw.revealCount,
-      privateMode: raw.privateMode,
-      teeWinnerReady: raw.teeWinnerReady,
-      bump: raw.bump,
-      metadataUri: raw.metadataUri ?? "",
-    },
-    runtime,
-    vaultLamports,
-    pdas: {
-      auction: ap.toBase58(),
-      runtime: rp.toBase58(),
-      vault: vp.toBase58(),
+    ok: true,
+    snapshot: {
+      config: {
+        seller: raw.seller.toBase58(),
+        vault: raw.vault.toBase58(),
+        auctionId: raw.auctionId.toString(),
+        phase: raw.phase,
+        biddingStartSec: raw.biddingStart.toNumber(),
+        commitEndSec: raw.commitEnd.toNumber(),
+        revealEndSec: raw.revealEnd.toNumber(),
+        leaderBidder: raw.leaderBidder.toBase58(),
+        leaderBid: raw.leaderBid.toString(),
+        winner: raw.winner.toBase58(),
+        winningPrice: raw.winningPrice.toString(),
+        resultHashHex: bytesToHex(rh),
+        commitCount: raw.commitCount,
+        revealCount: raw.revealCount,
+        privateMode: raw.privateMode,
+        teeWinnerReady: raw.teeWinnerReady,
+        bump: raw.bump,
+        metadataUri: raw.metadataUri ?? "",
+      },
+      runtime,
+      vaultLamports,
+      pdas: {
+        auction: ap.toBase58(),
+        runtime: rp.toBase58(),
+        vault: vp.toBase58(),
+      },
     },
   };
+}
+
+export async function fetchOnchainAuctionSnapshot(
+  connection: Connection,
+  auctionIdBn: BN
+): Promise<OnchainAuctionSnapshot | null> {
+  const r = await loadOnchainAuctionSnapshot(connection, auctionIdBn);
+  return r.ok ? r.snapshot : null;
 }

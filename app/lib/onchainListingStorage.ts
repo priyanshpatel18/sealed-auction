@@ -4,6 +4,8 @@ export type StoredOnchainAuction = {
   auctionId: string;
   tx: string;
   at: number;
+  /** RPC URL from `connection.rpcEndpoint` when the auction was created (optional for older entries). */
+  rpcEndpointAtCreate?: string;
 };
 
 function readRaw(): StoredOnchainAuction[] {
@@ -26,11 +28,23 @@ function readRaw(): StoredOnchainAuction[] {
   }
 }
 
-export function rememberCreatedAuction(auctionId: string, tx: string): void {
+export function rememberCreatedAuction(
+  auctionId: string,
+  tx: string,
+  rpcEndpointAtCreate?: string
+): void {
   if (typeof window === "undefined") return;
   const prev = readRaw();
+  const entry: StoredOnchainAuction = {
+    auctionId,
+    tx,
+    at: Date.now(),
+    ...(rpcEndpointAtCreate?.trim()
+      ? { rpcEndpointAtCreate: rpcEndpointAtCreate.trim() }
+      : {}),
+  };
   const next = [
-    { auctionId, tx, at: Date.now() },
+    entry,
     ...prev.filter((e) => e.auctionId !== auctionId),
   ].slice(0, 40);
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));

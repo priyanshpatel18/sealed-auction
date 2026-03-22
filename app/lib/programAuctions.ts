@@ -1,5 +1,6 @@
 import type { Connection } from "@solana/web3.js";
 import { decodeAuctionConfigData } from "@/lib/auctionConfigDecode";
+import { recoverMetadataUriFromInitTx } from "@/lib/metadataUriFromInitTx";
 import { programReadOnly } from "@/lib/program";
 
 export type AuctionMetadataJson = {
@@ -7,6 +8,10 @@ export type AuctionMetadataJson = {
   name?: string;
   description?: string;
   image?: string;
+  /** Pinned by our API as snake_case; also accept camelCase from hand-edited JSON. */
+  starting_price_sol?: string;
+  startingPriceSol?: string;
+  properties?: Record<string, unknown>;
 };
 
 export type ProgramAuctionListItem = {
@@ -25,6 +30,8 @@ export type ProgramAuctionListItem = {
   description: string;
   shortDescription: string;
   imageUrl: string | null;
+  /** From metadata JSON `starting_price_sol` (display only). */
+  startingPriceSol: string | null;
 };
 
 /** True while the commit window is open (Bidding phase and on-chain time window). */
@@ -39,7 +46,25 @@ export function isAuctionAcceptingCommits(
   return nowSec >= row.biddingStartSec && nowSec < row.commitEndSec;
 }
 
-function resolveMetadataImageUrl(
+export function startingPriceSolFromMetadata(
+  meta: AuctionMetadataJson | null | undefined
+): string | null {
+  if (!meta) return null;
+  const direct =
+    meta.starting_price_sol?.trim() || meta.startingPriceSol?.trim();
+  if (direct) return direct;
+  const p = meta.properties;
+  if (p && typeof p === "object") {
+    const raw =
+      (p as { starting_price_sol?: unknown }).starting_price_sol ??
+      (p as { startingPriceSol?: unknown }).startingPriceSol;
+    if (typeof raw === "string" && raw.trim()) return raw.trim();
+    if (typeof raw === "number" && Number.isFinite(raw)) return String(raw);
+  }
+  return null;
+}
+
+export function resolveMetadataImageUrl(
   raw: string | undefined,
   metadataUri: string
 ): string | null {
@@ -84,7 +109,7 @@ export async function fetchAllProgramAuctionsWithMetadata(
   connection: Connection
 ): Promise<ProgramAuctionListItem[]> {
   const program = programReadOnly(connection);
-  const memcmp = program.coder.accounts.memcmp("AuctionConfig");
+  const memcmp = program.coder.accounts.memcmp("auctionConfig");
   const raw = await connection.getProgramAccounts(program.programId, {
     filters: [
       {
@@ -97,9 +122,12 @@ export async function fetchAllProgramAuctionsWithMetadata(
   });
 
   const decoded = raw
-    .map(({ account }) => {
+    .map(({ pubkey, account }) => {
       try {
-        return decodeAuctionConfigData(program, account.data);
+        return {
+          pubkey,
+          account: decodeAuctionConfigData(program, account.data),
+        };
       } catch {
         return null;
       }
@@ -107,12 +135,21 @@ export async function fetchAllProgramAuctionsWithMetadata(
     .filter((x): x is NonNullable<typeof x> => x !== null);
 
   const enriched: ProgramAuctionListItem[] = [];
-  const chunkSize = 8;
+  const chunkSize = 4;
   for (let i = 0; i < decoded.length; i += chunkSize) {
     const slice = decoded.slice(i, i + chunkSize);
     const part = await Promise.all(
-      slice.map(async (account) => {
-        const metadataUri = account.metadataUri?.trim() ?? "";
+      slice.map(async ({ pubkey, account }) => {
+        let metadataUri = account.metadataUri?.trim() ?? "";
+        if (!metadataUri) {
+          const recovered = await recoverMetadataUriFromInitTx(
+            connection,
+            program.programId,
+            pubkey,
+            account.auctionId
+          );
+          if (recovered) metadataUri = recovered;
+        }
         let meta: AuctionMetadataJson | null = null;
         if (metadataUri) {
           meta = await fetchMetadataViaProxy(metadataUri);
@@ -122,6 +159,7 @@ export async function fetchAllProgramAuctionsWithMetadata(
           `Auction ${account.auctionId.toString()}`;
         const desc = (meta?.description ?? "").trim();
         const imageUrl = resolveMetadataImageUrl(meta?.image, metadataUri);
+        const startingPriceSol = startingPriceSolFromMetadata(meta);
         return {
           auctionId: account.auctionId.toString(),
           seller: account.seller.toBase58(),
@@ -137,6 +175,7 @@ export async function fetchAllProgramAuctionsWithMetadata(
           description: desc,
           shortDescription: desc.slice(0, 220),
           imageUrl,
+          startingPriceSol,
         };
       })
     );

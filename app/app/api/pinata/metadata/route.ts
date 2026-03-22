@@ -6,6 +6,8 @@ type Body = {
   title?: string;
   description?: string;
   imageUrl?: string | null;
+  /** Optional listing hint (SOL, not enforced on-chain by this field). */
+  startingPriceSol?: string | null;
 };
 
 /**
@@ -36,6 +38,10 @@ export async function POST(req: Request) {
   };
   if (body.imageUrl?.trim()) {
     pinataContent.image = body.imageUrl.trim();
+  }
+  const startPx = body.startingPriceSol?.trim();
+  if (startPx) {
+    pinataContent.starting_price_sol = startPx;
   }
 
   const res = await fetch("https://api.pinata.cloud/pinning/pinJSONToIPFS", {
