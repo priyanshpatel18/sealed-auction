@@ -1,39 +1,50 @@
-# Sealed auction — Next.js app
+# Veil — Next.js app
 
-Marketing UI (landing, discover, mock auction detail) plus **public** and **private** ER demos (dual-RPC + WebSocket).
+Frontend for **Veil** (sealed-bid auctions). Talks to the on-chain program:
+
+**Program ID:** `9msixs2rRpafs5RaCbLxTeNEiZbvg5Qux3L8qENEN4JZ`  
+(must match `app/lib/config.ts` and the deployment on your RPC cluster)
 
 ## Setup
 
 ```bash
-npm install
-# After `anchor build` in the repo root (`sealed-auction/`), keep IDL in sync:
-npm run sync-idl
+cd app
+yarn install
+# After `anchor build` in the repo root, keep the IDL in sync:
+yarn sync-idl
+yarn dev
 ```
 
-## Env (optional)
+Default dev server: **http://localhost:3333** (see `package.json`).
+
+## Environment variables
+
+### Public (browser)
 
 | Variable | Purpose |
 |----------|---------|
-| `NEXT_PUBLIC_BASE_RPC` | Base Solana RPC (default `http://127.0.0.1:8899`) |
-| `NEXT_PUBLIC_EPHEMERAL_RPC` | MagicBlock ER HTTP endpoint |
-| `NEXT_PUBLIC_EPHEMERAL_WS` | Matching `wss://` |
-| `NEXT_PUBLIC_ROUTER_ENDPOINT` | MagicBlock router (`https://devnet-router.magicblock.app`) |
-| `NEXT_PUBLIC_ROUTER_WS_ENDPOINT` | Router WebSocket |
-| `NEXT_PUBLIC_TEE_BASE` | Private ER TEE base (default `https://tee.magicblock.app`) |
+| `NEXT_PUBLIC_BASE_RPC` | Solana RPC — **must** match wallet network and program deployment (default `http://127.0.0.1:8899` in code). |
+| `NEXT_PUBLIC_EPHEMERAL_RPC` / `NEXT_PUBLIC_EPHEMERAL_WS` | MagicBlock ER endpoints. |
+| `NEXT_PUBLIC_ROUTER_ENDPOINT` / `NEXT_PUBLIC_ROUTER_WS_ENDPOINT` | MagicBlock router. |
+| `NEXT_PUBLIC_TEE_BASE` | TEE base URL for private flow. |
+| `NEXT_PUBLIC_PINATA_GATEWAY` | Optional IPFS gateway for listing previews. |
+
+### Server only (`app/.env`)
+
+| Variable | Purpose |
+|----------|---------|
+| `PINATA_JWT` | Pinata API JWT for **Create auction** metadata + image upload routes. |
+| `PINATA_GATEWAY_URL` | Optional; defaults to Pinata gateway. |
 
 ## Routes
 
-- `/` — landing (sealed-bid product UI)
-- `/discover` — mock auction grid
-- `/auction/[id]` — mock auction detail
-- `/auction` — on-chain public ER demo (`AuctionConfig` + `AuctionRuntime`, delegate)
-- `/private-auction` — TEE + `getAuthToken` flow
+| Path | Description |
+|------|-------------|
+| `/` | Landing |
+| `/discover` | On-chain auction grid |
+| `/auction/live/[auctionId]` | Auction detail + commit / reveal |
+| `/auction/[id]` | Redirects to live page |
+| `/create-auction` | Create listing + initialize auction |
+| `/private-auction` | Private / TEE demo |
 
-## Dev
-
-```bash
-npm run dev
-# http://localhost:3333
-```
-
-Point RPC env vars at the same cluster where the program `9msixs2rRpafs5RaCbLxTeNEiZbvg5Qux3L8qENEN4JZ` is deployed.
+Full project overview and contract table: **[../README.md](../README.md)**.
