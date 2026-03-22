@@ -13,8 +13,8 @@ const geistSans = Geist({
 
 export const metadata: Metadata = {
   title: {
-    default: "MagicBlock · Sealed-bid auctions",
-    template: "%s · MagicBlock",
+    default: "Veil · Sealed-bid auctions",
+    template: "%s · Veil",
   },
   description:
     "Sealed-bid auctions with TEE settlement and verifiable on-chain results — UI prototype.",

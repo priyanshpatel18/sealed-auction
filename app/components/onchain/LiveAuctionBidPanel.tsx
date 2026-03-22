@@ -222,7 +222,7 @@ export function LiveAuctionBidPanel({
     const stored = loadCommitSecrets(storageAuctionId, publicKey.toBase58());
     if (!stored) {
       setNote(
-        "No saved secret for this auction in this browser. Use the same device where you committed, or the full auction lab page to enter amount + salt manually."
+        "No saved secret for this auction in this browser. Use the same device where you committed, or reveal manually with the exact amount and salt from your commit."
       );
       return;
     }

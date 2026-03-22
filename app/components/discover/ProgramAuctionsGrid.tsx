@@ -178,19 +178,11 @@ export function ProgramAuctionsGrid() {
     );
   }
 
-  const nowSec = Math.floor(nowMs / 1000);
-  const liveCount = rows.filter((r) => isAuctionAcceptingCommits(r, nowSec)).length;
-
   return (
     <section aria-label="On-chain program auctions">
       <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <div className="min-w-0">
           <h2 className="text-lg font-semibold text-brand-cream">Browse auctions</h2>
-          <p className="mt-1 text-sm text-brand-muted">
-            <span className="text-brand-cream/90">{liveCount}</span> open for bids ·{" "}
-            <span className="text-brand-cream/90">{rows.length}</span> total — cards show a short
-            preview; open an auction for full details.
-          </p>
         </div>
         <div
           className="flex flex-wrap items-center gap-2"

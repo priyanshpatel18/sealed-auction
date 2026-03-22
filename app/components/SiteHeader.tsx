@@ -10,9 +10,9 @@ export function SiteHeader() {
         <div className="mx-auto flex h-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
           <Link
             href="/"
-            className="text-base font-semibold tracking-tight text-brand-cream focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-lime focus-visible:ring-offset-2 focus-visible:ring-offset-brand-bg"
+            className="text-2xl font-semibold tracking-tight text-brand-cream sm:text-3xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-lime focus-visible:ring-offset-2 focus-visible:ring-offset-brand-bg"
           >
-            MagicBlock<span className="text-brand-lime">.</span>
+            Veil
           </Link>
           <nav
             className="flex flex-wrap items-center justify-end gap-4 text-base font-medium sm:gap-6"
@@ -35,12 +35,6 @@ export function SiteHeader() {
               className="text-brand-muted transition hover:text-brand-lime focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-lime focus-visible:ring-offset-2 focus-visible:ring-offset-brand-bg"
             >
               Create
-            </Link>
-            <Link
-              href="/auction"
-              className="text-brand-muted transition hover:text-brand-lime focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-lime focus-visible:ring-offset-2 focus-visible:ring-offset-brand-bg"
-            >
-              Trade
             </Link>
             <SiteHeaderWallet />
           </nav>
