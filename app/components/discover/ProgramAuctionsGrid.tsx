@@ -9,124 +9,93 @@ import {
 } from "@/lib/programAuctions";
 import type { ProgramAuctionListItem } from "@/lib/programAuctions";
 import { formatTimeLeft } from "@/lib/format";
-import { StatusBadge } from "@/components/ui/Badge";
-
-function phaseLabel(phase: number): string {
-  if (phase === 0) return "Bidding";
-  if (phase === 1) return "Reveal";
-  if (phase === 2) return "Settled";
-  return `Phase ${phase}`;
-}
-
-function listingStatus(
-  phase: number,
-  revealEndSec: number,
-  nowMs: number
-): "live" | "ending_soon" | "ended" {
-  if (phase === 2) return "ended";
-  const endMs = revealEndSec * 1000;
-  if (nowMs >= endMs) return "ended";
-  const leftSec = Math.max(0, Math.floor((endMs - nowMs) / 1000));
-  if (leftSec < 86400) return "ending_soon";
-  return "live";
-}
-
-function shortenPk(pk: string): string {
-  if (pk.length <= 12) return pk;
-  return `${pk.slice(0, 4)}…${pk.slice(-4)}`;
-}
+import { ButtonLink } from "@/components/ui/Button";
 
 type ListFilter = "live" | "all";
 
+/** One-line countdown for the card: bidding window first, else reveal window, else ended. */
+function cardCountdownParts(
+  row: ProgramAuctionListItem,
+  nowSec: number
+): { caption: string; display: string } {
+  const accepting = isAuctionAcceptingCommits(row, nowSec);
+  if (accepting) {
+    const left = Math.max(0, row.commitEndSec - nowSec);
+    return {
+      caption: "Bidding ends in",
+      display: formatTimeLeft(left, false),
+    };
+  }
+  if (row.phase === 2 || nowSec >= row.revealEndSec) {
+    return { caption: "Auction", display: "Ended" };
+  }
+  const left = Math.max(0, row.revealEndSec - nowSec);
+  return {
+    caption: "Reveal ends in",
+    display: formatTimeLeft(left, false),
+  };
+}
+
 function AuctionProgramCard({ row, nowMs }: { row: ProgramAuctionListItem; nowMs: number }) {
-  const status = listingStatus(row.phase, row.revealEndSec, nowMs);
   const nowSec = Math.floor(nowMs / 1000);
   const accepting = isAuctionAcceptingCommits(row, nowSec);
-  const remainingSec =
-    status === "ended" ? null : Math.max(0, row.revealEndSec - nowSec);
-  const timeLabel = formatTimeLeft(remainingSec, status === "ended");
-  const commitLeftSec = accepting
-    ? Math.max(0, row.commitEndSec - nowSec)
-    : null;
-  const commitEndsLabel =
-    commitLeftSec !== null ? formatTimeLeft(commitLeftSec, false) : null;
+  const { caption, display } = cardCountdownParts(row, nowSec);
+  const href = `/auction/live/${row.auctionId}`;
+  const desc = row.description.trim() || "No description in metadata.";
 
   return (
-    <Link
-      href={`/auction/live/${row.auctionId}`}
-      className="auction-card group flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-brand-muted/45 bg-gradient-to-b from-brand-cream/[0.07] to-transparent transition duration-300 hover:-translate-y-1 hover:border-brand-lime/35 hover:shadow-[0_24px_48px_-28px_rgba(222,241,87,0.25)] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-lime"
-    >
-      <div className="relative shrink-0 bg-brand-bg/80">
-        <div className="aspect-[16/10] w-full overflow-hidden">
-          {row.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- IPFS / gateway URLs vary; avoid remotePatterns churn
-            <img
-              src={row.imageUrl}
-              alt=""
-              className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-              loading="lazy"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-brand-muted/20 to-brand-bg px-4 text-center text-xs text-brand-muted">
-              <span className="text-brand-muted/80">No cover image</span>
-              <span className="max-w-[14rem] text-[0.65rem] leading-relaxed text-brand-muted/60">
-                Pin metadata with an <code className="text-brand-cream/50">image</code> field
-                when creating the auction.
-              </span>
-            </div>
-          )}
+    <article className="auction-card flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-brand-muted/45 bg-gradient-to-b from-brand-cream/[0.07] to-transparent transition duration-300 hover:-translate-y-1 hover:border-brand-lime/35 hover:shadow-[0_24px_48px_-28px_rgba(222,241,87,0.25)]">
+      <Link
+        href={href}
+        className="group flex min-h-0 flex-1 flex-col focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-lime focus-visible:ring-offset-2 focus-visible:ring-offset-brand-bg"
+      >
+        <div className="relative shrink-0 bg-brand-bg/80">
+          <div className="aspect-[16/10] w-full overflow-hidden">
+            {row.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- IPFS / gateway URLs vary; avoid remotePatterns churn
+              <img
+                src={row.imageUrl}
+                alt=""
+                className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+                loading="lazy"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="flex h-full min-h-[8rem] w-full items-center justify-center bg-gradient-to-br from-brand-muted/20 to-brand-bg px-4 text-center text-xs text-brand-muted">
+                No cover image
+              </div>
+            )}
+          </div>
         </div>
-        <div className="absolute right-3 top-3 z-10 flex flex-wrap justify-end gap-2">
-          {accepting ? (
-            <span className="rounded-full border border-brand-lime/60 bg-brand-lime/20 px-2.5 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-brand-lime">
-              Open for bids
-            </span>
-          ) : null}
-          <StatusBadge status={status} />
-        </div>
-        <span className="absolute bottom-3 left-3 z-10 rounded-full border border-brand-muted/50 bg-brand-bg/85 px-2 py-0.5 text-[0.65rem] font-medium uppercase tracking-wide text-brand-lime">
-          {phaseLabel(row.phase)}
-          {row.privateMode ? " · Private" : ""}
-        </span>
-      </div>
-      <div className="flex min-h-0 flex-1 flex-col p-4">
-        <h2 className="line-clamp-2 min-h-[3rem] text-base font-semibold leading-snug text-brand-cream transition group-hover:text-brand-lime">
-          {row.title}
-        </h2>
-        <p className="mt-2 line-clamp-4 min-h-[4.5rem] text-sm leading-relaxed text-brand-muted">
-          {row.description.trim() || "No description in metadata."}
-        </p>
-        <p className="mt-3 text-[0.7rem] text-brand-muted/90">
-          <span className="text-brand-muted">Seller </span>
-          <span className="font-mono text-brand-cream/80">{shortenPk(row.seller)}</span>
-          <span className="mx-1.5 text-brand-muted/50">·</span>
-          <span className="text-brand-muted">ID </span>
-          <span className="font-mono tabular-nums text-brand-cream/80">{row.auctionId}</span>
-        </p>
-        {row.startingPriceSol ? (
-          <p className="mt-2 text-sm font-medium text-brand-lime">
-            Starting at {row.startingPriceSol} SOL
+        <div className="flex min-h-0 flex-1 flex-col px-4 pb-3 pt-4">
+          <h2 className="line-clamp-2 text-base font-semibold leading-snug text-brand-cream transition group-hover:text-brand-lime">
+            {row.title}
+          </h2>
+          <p
+            className="mt-2 line-clamp-2 text-sm leading-relaxed text-brand-muted"
+            title={desc.length > 120 ? desc : undefined}
+          >
+            {desc}
           </p>
-        ) : null}
-        <dl className="mt-auto flex flex-wrap gap-x-6 gap-y-2 border-t border-brand-muted/30 pt-4 text-xs">
-          {accepting && commitEndsLabel ? (
-            <div>
-              <dt className="text-brand-muted">Commit window ends</dt>
-              <dd className="mt-0.5 font-mono tabular-nums text-brand-lime">{commitEndsLabel}</dd>
-            </div>
-          ) : null}
-          <div>
-            <dt className="text-brand-muted">Until reveal end</dt>
-            <dd className="mt-0.5 font-mono tabular-nums text-brand-cream">{timeLabel}</dd>
-          </div>
-          <div>
-            <dt className="text-brand-muted">Commits</dt>
-            <dd className="mt-0.5 font-mono tabular-nums text-brand-lime">{row.commitCount}</dd>
-          </div>
-        </dl>
+        </div>
+      </Link>
+      <div className="mt-auto flex items-end justify-between gap-3 border-t border-brand-muted/30 px-4 pb-4 pt-3">
+        <div className="min-w-0">
+          <p className="text-[0.65rem] font-medium uppercase tracking-wide text-brand-muted">
+            {caption}
+          </p>
+          <p className="mt-0.5 font-mono text-sm tabular-nums text-brand-lime">{display}</p>
+        </div>
+        <ButtonLink
+          href={href}
+          variant="primary"
+          size="md"
+          className="shrink-0 !rounded-xl px-5 py-2 text-sm"
+        >
+          {accepting ? "Bid" : "View"}
+        </ButtonLink>
       </div>
-    </Link>
+    </article>
   );
 }
 
@@ -218,9 +187,9 @@ export function ProgramAuctionsGrid() {
         <div className="min-w-0">
           <h2 className="text-lg font-semibold text-brand-cream">Browse auctions</h2>
           <p className="mt-1 text-sm text-brand-muted">
-            <span className="text-brand-cream/90">{liveCount}</span> open for bids now ·{" "}
-            <span className="text-brand-cream/90">{rows.length}</span> total on-chain — cards use
-            title, description, and image from IPFS metadata.
+            <span className="text-brand-cream/90">{liveCount}</span> open for bids ·{" "}
+            <span className="text-brand-cream/90">{rows.length}</span> total — cards show a short
+            preview; open an auction for full details.
           </p>
         </div>
         <div

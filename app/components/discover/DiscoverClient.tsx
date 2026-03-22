@@ -1,6 +1,5 @@
 "use client";
 
-import { OnchainDiscoverStrip } from "@/components/discover/OnchainDiscoverStrip";
 import { ProgramAuctionsGrid } from "@/components/discover/ProgramAuctionsGrid";
 
 export function DiscoverClient() {
@@ -11,16 +10,15 @@ export function DiscoverClient() {
           Discover auctions
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-brand-muted">
-          Listings are read from your deployed program on{" "}
+          Listings are read from your program on{" "}
           <code className="text-xs text-brand-cream/85">NEXT_PUBLIC_BASE_RPC</code>
-          . Each card shows title, description, and cover image from the IPFS
-          metadata URL stored in each auction account. Default view is auctions still accepting
-          sealed bids.
+          . Cards show a short preview (title, description snippet, image) from IPFS metadata; open
+          an auction for seller, id, commits, and full schedule. Default view is auctions still
+          accepting sealed bids.
         </p>
 
-        <div className="mt-10 space-y-10">
+        <div className="mt-10">
           <ProgramAuctionsGrid />
-          <OnchainDiscoverStrip />
         </div>
       </div>
     </div>
